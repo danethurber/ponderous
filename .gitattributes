@@ -1,0 +1,72 @@
+# Basic auto-detection
+* text=auto
+
+# Source code files
+*.py text eol=lf
+*.pyi text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# SQL files
+*.sql text eol=lf
+
+# Documentation
+*.rst text eol=lf
+
+# Configuration files
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+
+# Lock files (binary)
+uv.lock binary
+poetry.lock binary
+package-lock.json binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.tar.gz binary
+*.tar.bz2 binary
+*.tar.xz binary
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# Language-specific attributes
+*.py diff=python
+
+# Jupyter notebooks - treat as text but with special handling
+*.ipynb text eol=lf filter=nbstripout
+*.ipynb diff=ipynb
+
+# Database files
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Exclude files from exports
+docs/prd.md export-ignore
+tests/ export-ignore
+.github/ export-ignore

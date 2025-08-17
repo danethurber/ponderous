@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(export:*)",
+      "Bash(python -m pytest tests/unit/infrastructure/test_database.py -v)",
+      "Bash(./scripts/uv run:*)",
+      "Bash(uv run:*)",
+      "Bash(pip config list:*)",
+      "Bash(grep:*)",
+      "Bash(uv sync:*)",
+      "Bash(mv:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(UV_NO_CONFIG=1 uv run python .claude/hooks/claude_quality_gate.py src/ponderous/shared/exceptions.py)",
+      "WebFetch(domain:docs.astral.sh)",
+      "Bash(UV_NO_CONFIG=1 uv sync --group test)",
+      "Bash(UV_NO_CONFIG=1 uv run --group test pytest tests/unit/domain/test_card.py::TestCard::test_create_card_with_valid_data -v)",
+      "WebFetch(domain:github.com)",
+      "Bash(env)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "/Library/Application Support",
+      "/Users/dane"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# Global code owners
+* @danethurber
+
+# Core architecture and domain models
+/src/ponderous/domain/ @danethurber
+/src/ponderous/shared/ @danethurber
+
+# Infrastructure and database
+/src/ponderous/infrastructure/ @danethurber
+
+# Documentation
+/docs/ @danethurber
+/README.md @danethurber
+
+# Configuration files
+/pyproject.toml @danethurber
+/.github/ @danethurber
+/.vscode/ @danethurber
