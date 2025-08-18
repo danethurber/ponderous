@@ -80,7 +80,7 @@ body:
       placeholder: |
         Example command:
         $ ponderous new-feature --option value
-        
+
         Expected output:
         Feature result...
 

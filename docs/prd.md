@@ -2,11 +2,11 @@
 
 ## Document Overview
 
-**Project:** Ponderous  
-**Version:** 1.0  
-**Created:** August 2025  
-**Document Owner:** Product Development Team  
-**Last Updated:** August 2025  
+**Project:** Ponderous
+**Version:** 1.0
+**Created:** August 2025
+**Document Owner:** Product Development Team
+**Last Updated:** August 2025
 
 **Change History:**
 - v1.0 - Initial PRD creation with TDD and clean code requirements
@@ -30,7 +30,7 @@
 ### Problem Statement
 MTG players struggle to identify which Commander decks they can build from their existing collections, leading to:
 - Redundant card purchases
-- Underutilized card collections  
+- Underutilized card collections
 - Time-consuming manual deck analysis
 - Difficulty discovering new deck archetypes
 
@@ -79,7 +79,7 @@ Create an intelligent CLI tool named **Ponderous** that analyzes collections aga
 
 **Test-Driven Development** (following Red-Green-Refactor TDD methodology):
 - Write failing tests first (Red)
-- Implement minimal code to pass (Green)  
+- Implement minimal code to pass (Green)
 - Refactor for quality (Refactor)
 - Focus on testing behavior rather than implementation details
 
@@ -110,7 +110,7 @@ ponderous user-stats --user-id <user_id>
 
 #### F1.2: EDHREC Data Extraction
 - [ ] **F1.2.1**: Scrape commander overview statistics
-- [ ] **F1.2.2**: Extract deck archetypes (Aggro/Control/Combo/Midrange)  
+- [ ] **F1.2.2**: Extract deck archetypes (Aggro/Control/Combo/Midrange)
 - [ ] **F1.2.3**: Parse budget variations (budget/mid/high/cEDH)
 - [ ] **F1.2.4**: Capture card inclusion rates and synergy scores
 - [ ] **F1.2.5**: Respect rate limiting (1.5 req/sec)
@@ -162,7 +162,7 @@ ponderous deck-details "Meren of Clan Nel Toth" \
    🃏 Cards: 78/89 owned
    💸 Missing Value: $67
 
-📋 +1/+1 Counters (Midrange)  
+📋 +1/+1 Counters (Midrange)
    💰 Budget: Budget ($180)
    ✅ Completion: 92.1%
    📊 Buildability Score: 8.2/10
@@ -237,7 +237,7 @@ Rank | Commander                  | Colors | Budget  | Archetype | Owned | Compl
 ```bash
 # Color identity options
 --colors "W,U,B,R,G"           # Single colors
---colors "WU,BR,RG"            # Two-color combinations  
+--colors "WU,BR,RG"            # Two-color combinations
 --colors "WUB,BRG"             # Three-color combinations
 --colors "WUBR,UBRG"           # Four-color combinations
 --colors "WUBRG"               # Five-color
@@ -245,7 +245,7 @@ Rank | Commander                  | Colors | Budget  | Archetype | Owned | Compl
 
 # Budget brackets
 --budget-bracket "budget"      # <$150
---budget-bracket "mid"         # $150-500  
+--budget-bracket "mid"         # $150-500
 --budget-bracket "high"        # $500-1000
 --budget-bracket "cedh"        # >$1000
 --budget-min 100 --budget-max 400  # Custom range
@@ -260,7 +260,7 @@ Rank | Commander                  | Colors | Budget  | Archetype | Owned | Compl
 --salt-score-max 2.0           # Avoid salty cards
 --win-rate-min 0.45            # Competitive viability
 
-# Archetype preferences  
+# Archetype preferences
 --archetype "aggro,midrange,control,combo"
 --exclude-archetype "stax"     # Avoid certain strategies
 --themes "tribal,artifacts,graveyard"  # Include specific themes
@@ -383,13 +383,13 @@ CREATE TABLE deck_card_inclusions (
 @dlt.source
 def moxfield_collection_source(username: str) -> Iterator[Dict[str, Any]]:
     """Extract collection data from Moxfield API
-    
+
     Args:
         username: Moxfield username
-        
+
     Yields:
         Collection items with standardized schema
-        
+
     Raises:
         MoxfieldAPIError: When API request fails
         ValidationError: When data format is invalid
@@ -398,26 +398,26 @@ def moxfield_collection_source(username: str) -> Iterator[Dict[str, Any]]:
 @dlt.transformer(data_from=moxfield_collection_source)
 def normalize_collection_data(items: Iterator[Dict]) -> Iterator[Dict]:
     """Transform raw collection data to standard format
-    
+
     Args:
         items: Raw collection items from source
-        
+
     Yields:
         Normalized collection records
     """
 
 class EDHRECExtractor:
     """Extract comprehensive EDHREC statistics using Beautiful Soup"""
-    
+
     def __init__(self, rate_limit: float = 1.5):
         self.rate_limit = rate_limit
-        
+
     def extract_commander_overview(self, commander: str) -> Dict[str, Any]:
         """Extract commander statistics and popularity data"""
-        
+
     def extract_deck_archetypes(self, commander: str) -> List[Dict[str, Any]]:
         """Extract archetype-specific deck variations"""
-        
+
     def extract_budget_variations(self, commander: str) -> List[Dict[str, Any]]:
         """Extract budget-range specific deck data"""
 ```
@@ -427,7 +427,7 @@ class EDHRECExtractor:
 ```python
 class DeckAnalyzer:
     """Advanced deck analysis with multi-dimensional scoring"""
-    
+
     def get_commander_recommendations(
         self,
         commander_name: str,
@@ -436,7 +436,7 @@ class DeckAnalyzer:
         sort_by: str = 'buildability'
     ) -> List[DeckRecommendation]:
         """Get ranked deck recommendations for commander"""
-        
+
     def discover_commanders_for_collection(
         self,
         user_id: str,
@@ -445,17 +445,17 @@ class DeckAnalyzer:
         limit: int = 20
     ) -> List[CommanderRecommendation]:
         """Discover optimal commanders based on user's collection
-        
+
         Args:
             user_id: User identifier
             filters: Discovery filters (colors, budget, archetype, etc.)
             sort_by: Sorting criteria priority list
             limit: Maximum number of recommendations
-            
+
         Returns:
             Ranked list of commander recommendations
         """
-        
+
     def calculate_buildability_score(
         self,
         owned_cards: Set[str],
@@ -463,14 +463,14 @@ class DeckAnalyzer:
         synergy_weights: Dict[str, float]
     ) -> float:
         """Calculate weighted buildability score (0-10)"""
-        
+
     def analyze_collection_strengths(
         self,
         user_id: str
     ) -> CollectionAnalysis:
         """Analyze collection to identify strongest color combinations,
         archetypes, and themes for commander recommendations"""
-        
+
     def identify_missing_cards(
         self,
         owned_cards: Set[str],
@@ -512,13 +512,13 @@ class CommanderRecommendation:
     themes: List[str]
     collection_synergy_score: float  # How well it leverages existing cards
 
-@dataclass 
+@dataclass
 class CommanderDiscoveryFilters:
     """Filters for commander discovery"""
     colors: Optional[List[str]] = None           # ['W', 'U', 'B'], ['WU', 'BR']
     exclude_colors: Optional[List[str]] = None   # Colors to avoid
     budget_min: Optional[float] = None           # Minimum deck cost
-    budget_max: Optional[float] = None           # Maximum deck cost  
+    budget_max: Optional[float] = None           # Maximum deck cost
     budget_bracket: Optional[str] = None         # 'budget', 'mid', 'high', 'cedh'
     archetypes: Optional[List[str]] = None       # ['aggro', 'control', 'combo']
     exclude_archetypes: Optional[List[str]] = None
@@ -530,7 +530,7 @@ class CommanderDiscoveryFilters:
     salt_score_max: Optional[float] = None       # Maximum salt tolerance
     win_rate_min: Optional[float] = None         # Minimum competitive viability
     min_completion: float = 0.7                  # Minimum collection completion
-    
+
 @dataclass
 class CollectionAnalysis:
     """Analysis of collection strengths and characteristics"""
@@ -600,14 +600,14 @@ def deck_details(commander_name: str, user_id: str, **kwargs):
 @click.option('--show-missing', is_flag=True, help='Include missing cards analysis')
 def discover_commanders(user_id: str, **kwargs):
     """Discover optimal commanders based on your collection
-    
+
     Examples:
         # Find Golgari commanders under $300
         ponderous discover-commanders --user-id myuser --colors BG --budget-max 300
-        
+
         # Find competitive control decks
         ponderous discover-commanders --user-id myuser --archetype control --power-min 8
-        
+
         # Find popular tribal commanders
         ponderous discover-commanders --user-id myuser --themes tribal --popularity-min 2000
     """
@@ -646,7 +646,7 @@ Following the Red-Green-Refactor TDD cycle:
 # Example TDD approach for deck analysis
 class TestDeckAnalyzer:
     """Test suite for deck analysis functionality"""
-    
+
     def test_buildability_score_calculation_empty_collection(self):
         """Should return 0 for empty collection"""
         analyzer = DeckAnalyzer()
@@ -656,18 +656,18 @@ class TestDeckAnalyzer:
             synergy_weights={"signature": 3.0, "staple": 1.5}
         )
         assert score == 0.0
-    
+
     def test_buildability_score_calculation_complete_collection(self):
         """Should return 10 for complete collection"""
         # Test implementation...
-        
+
     def test_missing_cards_identification_sorts_by_impact(self):
         """Should return missing cards sorted by synergy score"""
         # Test implementation...
-        
+
     @pytest.mark.parametrize("completion,expected_score", [
         (0.5, 3.5),  # 50% completion
-        (0.8, 7.2),  # 80% completion  
+        (0.8, 7.2),  # 80% completion
         (1.0, 10.0), # 100% completion
     ])
     def test_buildability_score_calculation_parametrized(self, completion, expected_score):
@@ -695,7 +695,7 @@ Following Clean Code principles and Python best practices:
 # Good: Descriptive, intention-revealing names
 def calculate_deck_completion_percentage(owned_cards: Set[str], required_cards: List[str]) -> float:
     """Calculate what percentage of deck cards the user owns"""
-    
+
 # Bad: Unclear abbreviations
 def calc_pct(cards1, cards2):
     pass
@@ -727,7 +727,7 @@ def extract_and_parse_synergy(card_element):
 # Good: Specific exceptions with context
 class MoxfieldAPIError(Exception):
     """Raised when Moxfield API request fails"""
-    
+
     def __init__(self, status_code: int, message: str):
         self.status_code = status_code
         super().__init__(f"Moxfield API error {status_code}: {message}")
@@ -801,7 +801,7 @@ tests/
 - [ ] **T1.6**: Set up DuckDB database schema
 - [ ] **T1.7**: Create comprehensive README with setup instructions for Ponderous CLI
 
-#### 🧪 TDD Test Suite Foundation  
+#### 🧪 TDD Test Suite Foundation
 - [ ] **T1.8**: Create pytest configuration and test structure
 - [ ] **T1.9**: Write test fixtures for sample data
 - [ ] **T1.10**: Set up test coverage reporting
@@ -843,7 +843,7 @@ tests/
 
 #### 💻 CLI Interface
 - [ ] **T1.27**: Create Click-based CLI framework + TDD
-- [ ] **T1.28**: Implement collection sync commands + TDD  
+- [ ] **T1.28**: Implement collection sync commands + TDD
 - [ ] **T1.29**: Build deck recommendation commands + TDD
 - [ ] **T1.30**: Add detailed analysis commands + TDD
 - [ ] **T1.31**: Create commander discovery commands + TDD
@@ -913,7 +913,7 @@ tests/
 - [ ] ✅ **Coverage**: Support for 100+ popular commanders with comprehensive statistics
 - [ ] ✅ **Reliability**: 99.9% uptime for core functionality
 
-### Quality Requirements  
+### Quality Requirements
 - [ ] ✅ **Test Coverage**: 95%+ code coverage with comprehensive test suite
 - [ ] ✅ **Code Quality**: 0 critical code smells, PEP 8 compliance
 - [ ] ✅ **Documentation**: Complete API documentation and user guides
@@ -937,7 +937,7 @@ tests/
 | Data quality issues | Medium | High | Comprehensive validation, data cleaning, error reporting |
 | Performance degradation | Medium | Low | Benchmarking, optimization, caching strategies |
 
-### Business Risks  
+### Business Risks
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
 | User adoption | High | Medium | Clear value proposition, excellent UX, documentation |
@@ -952,7 +952,7 @@ This PRD provides a comprehensive roadmap for building **Ponderous**, a high-qua
 
 **Next Steps:**
 1. Review and approve PRD with stakeholders
-2. Set up development environment and CI/CD pipeline  
+2. Set up development environment and CI/CD pipeline
 3. Begin Phase 1 implementation with TDD approach
 4. Regular sprint reviews and quality assessments
 

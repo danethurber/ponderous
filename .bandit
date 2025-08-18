@@ -1,0 +1,3 @@
+skips: ['B101', 'B404', 'B603']
+exclude_dirs: ['tests', '.venv', '.uv', '__pycache__', '.git']
+severity: medium

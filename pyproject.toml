@@ -54,6 +54,7 @@ lint = [
     "mypy>=1.17.1",
     "types-requests>=2.31.0",
     "types-setuptools>=68.2.0",
+    "types-PyYAML>=6.0.12",
 ]
 dev = [
     "pre-commit>=4.3.0",
@@ -153,7 +154,7 @@ ignore_missing_imports = true
 minversion = "8.0"
 addopts = [
     "--strict-markers",
-    "--strict-config", 
+    "--strict-config",
     "--cov=ponderous",
     "--cov-report=term-missing",
     "--cov-report=html",
@@ -200,4 +201,3 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
-

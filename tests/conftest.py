@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -19,13 +20,13 @@ from ponderous.domain.models import (
 from ponderous.shared.config import PonderousConfig
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def temp_db_path(tmp_path: Path) -> Path:
     """Create a temporary database path for testing."""
     return tmp_path / "test_ponderous.db"
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def test_config(temp_db_path: Path) -> PonderousConfig:
     """Create test configuration with temporary database."""
     config = PonderousConfig()
@@ -35,7 +36,7 @@ def test_config(temp_db_path: Path) -> PonderousConfig:
     return config
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_user() -> User:
     """Create a sample user for testing."""
     return User(
@@ -49,7 +50,7 @@ def sample_user() -> User:
     )
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_cards() -> list[Card]:
     """Create sample cards for testing."""
     return [
@@ -92,7 +93,7 @@ def sample_cards() -> list[Card]:
     ]
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_collection_items(sample_user: User) -> list[CollectionItem]:
     """Create sample collection items for testing."""
     return [
@@ -126,7 +127,7 @@ def sample_collection_items(sample_user: User) -> list[CollectionItem]:
     ]
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_collection(
     sample_user: User, sample_collection_items: list[CollectionItem]
 ) -> Collection:
@@ -134,7 +135,7 @@ def sample_collection(
     return Collection.from_items(sample_user.user_id, sample_collection_items)
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_card_data() -> list[CardData]:
     """Create sample card data for deck analysis testing."""
     return [
@@ -173,7 +174,7 @@ def sample_card_data() -> list[CardData]:
     ]
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_commander() -> Commander:
     """Create a sample commander for testing."""
     return Commander(
@@ -188,7 +189,7 @@ def sample_commander() -> Commander:
     )
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_deck_recommendation() -> DeckRecommendation:
     """Create a sample deck recommendation for testing."""
     return DeckRecommendation(
@@ -205,7 +206,7 @@ def sample_deck_recommendation() -> DeckRecommendation:
     )
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def sample_missing_cards(sample_card_data: list[CardData]) -> list[MissingCard]:
     """Create sample missing cards for testing."""
     return [
@@ -222,7 +223,7 @@ def sample_missing_cards(sample_card_data: list[CardData]) -> list[MissingCard]:
     ]
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def mock_moxfield_response() -> dict:
     """Mock Moxfield API response for testing."""
     return {
@@ -255,7 +256,7 @@ def mock_moxfield_response() -> dict:
     }
 
 
-@pytest.fixture
+@pytest.fixture  # type: ignore[misc]
 def mock_edhrec_html() -> str:
     """Mock EDHREC HTML response for testing."""
     return """
@@ -282,14 +283,14 @@ def mock_edhrec_html() -> str:
     """
 
 
-@pytest.fixture
-def mock_database():
+@pytest.fixture  # type: ignore[misc]
+def mock_database() -> Mock:
     """Create a mock database for testing."""
     return Mock()
 
 
 # Pytest markers for different test categories
-def pytest_configure(config):
+def pytest_configure(config: Any) -> None:
     """Configure pytest markers."""
     config.addinivalue_line("markers", "unit: Unit tests")
     config.addinivalue_line("markers", "integration: Integration tests")
@@ -301,7 +302,7 @@ def pytest_configure(config):
 
 
 # Auto-apply markers based on test location
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(config: Any, items: Any) -> None:
     """Automatically apply markers based on test file location."""
     for item in items:
         # Add unit marker to tests in unit/ directory

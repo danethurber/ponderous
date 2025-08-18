@@ -11,7 +11,7 @@ from ponderous.shared.exceptions import DatabaseError
 class TestDatabaseConnection:
     """Test suite for DatabaseConnection."""
 
-    def test_database_connection_creation_with_memory_config(self):
+    def test_database_connection_creation_with_memory_config(self) -> None:
         """Should create in-memory database connection for testing."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -21,7 +21,7 @@ class TestDatabaseConnection:
             result = conn.execute("SELECT 1 as test").fetchone()
             assert result[0] == 1
 
-    def test_database_connection_table_exists_check(self):
+    def test_database_connection_table_exists_check(self) -> None:
         """Should correctly check if table exists."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -33,7 +33,7 @@ class TestDatabaseConnection:
         db.execute_query("CREATE TABLE test_table (id INTEGER)")
         assert db.table_exists("test_table") is True
 
-    def test_database_connection_fetch_one(self):
+    def test_database_connection_fetch_one(self) -> None:
         """Should fetch single result correctly."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -44,7 +44,7 @@ class TestDatabaseConnection:
         result = db.fetch_one("SELECT * FROM test WHERE id = ?", (1,))
         assert result == (1, "test")
 
-    def test_database_connection_fetch_all(self):
+    def test_database_connection_fetch_all(self) -> None:
         """Should fetch multiple results correctly."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -55,7 +55,7 @@ class TestDatabaseConnection:
         results = db.fetch_all("SELECT * FROM test ORDER BY id")
         assert results == [(1,), (2,), (3,)]
 
-    def test_database_connection_transaction_success(self):
+    def test_database_connection_transaction_success(self) -> None:
         """Should commit transaction on success."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -69,7 +69,7 @@ class TestDatabaseConnection:
         results = db.fetch_all("SELECT * FROM test ORDER BY id")
         assert results == [(1,), (2,)]
 
-    def test_database_connection_transaction_rollback_on_error(self):
+    def test_database_connection_transaction_rollback_on_error(self) -> None:
         """Should rollback transaction on error."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -85,7 +85,7 @@ class TestDatabaseConnection:
         results = db.fetch_all("SELECT * FROM test")
         assert results == []
 
-    def test_database_connection_execute_many(self):
+    def test_database_connection_execute_many(self) -> None:
         """Should execute batch operations correctly."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -98,7 +98,7 @@ class TestDatabaseConnection:
         results = db.fetch_all("SELECT * FROM test ORDER BY id")
         assert results == [(1, "first"), (2, "second"), (3, "third")]
 
-    def test_database_connection_get_table_schema(self):
+    def test_database_connection_get_table_schema(self) -> None:
         """Should return table schema information."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -122,7 +122,7 @@ class TestDatabaseConnection:
         assert "name" in column_names
         assert "price" in column_names
 
-    def test_database_connection_close(self):
+    def test_database_connection_close(self) -> None:
         """Should close connection properly."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -135,19 +135,20 @@ class TestDatabaseConnection:
         db.close()
         assert db._connection is None
 
-    def test_database_connection_context_manager(self):
+    def test_database_connection_context_manager(self) -> None:
         """Should work as context manager."""
         config = DatabaseConfig(memory=True)
 
         with DatabaseConnection(config) as db:
             result = db.fetch_one("SELECT 1 as test")
+            assert result is not None
             assert result[0] == 1
 
 
 class TestDatabaseMigrator:
     """Test suite for DatabaseMigrator."""
 
-    def test_database_migrator_initialization(self):
+    def test_database_migrator_initialization(self) -> None:
         """Should initialize database with all migrations."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -172,7 +173,7 @@ class TestDatabaseMigrator:
         for table in expected_tables:
             assert db.table_exists(table), f"Table {table} should exist"
 
-    def test_database_migrator_applied_migrations_tracking(self):
+    def test_database_migrator_applied_migrations_tracking(self) -> None:
         """Should track applied migrations correctly."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -190,7 +191,7 @@ class TestDatabaseMigrator:
         assert migrations[0][0] == 1
         assert "users table" in migrations[0][1]
 
-    def test_database_migrator_default_collection_sources(self):
+    def test_database_migrator_default_collection_sources(self) -> None:
         """Should insert default collection sources."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -205,7 +206,7 @@ class TestDatabaseMigrator:
         assert "moxfield" in source_ids
         assert "archidekt" in source_ids
 
-    def test_database_migrator_get_database_info(self):
+    def test_database_migrator_get_database_info(self) -> None:
         """Should return database information."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -220,7 +221,7 @@ class TestDatabaseMigrator:
         assert info["migrations_applied"] == 7
         assert len(info["tables"]) >= 6  # At least our main tables
 
-    def test_database_migrator_reset_database(self):
+    def test_database_migrator_reset_database(self) -> None:
         """Should reset database by dropping all tables."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -234,7 +235,7 @@ class TestDatabaseMigrator:
         assert not db.table_exists("users")
         assert not db.table_exists("schema_migrations")
 
-    def test_database_migrator_idempotent_initialization(self):
+    def test_database_migrator_idempotent_initialization(self) -> None:
         """Should be safe to run initialization multiple times."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -248,7 +249,7 @@ class TestDatabaseMigrator:
         info = migrator.get_database_info()
         assert info["migrations_applied"] == 7
 
-    def test_database_migrator_handles_migration_errors(self):
+    def test_database_migrator_handles_migration_errors(self) -> None:
         """Should handle migration errors gracefully."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)
@@ -257,18 +258,18 @@ class TestDatabaseMigrator:
         # Mock a migration to fail
         original_get_migrations = migrator._get_migrations
 
-        def mock_get_migrations():
+        def mock_get_migrations() -> list[tuple[int, str, str]]:
             migrations = original_get_migrations()
             # Add a bad migration
             migrations.append((999, "Bad migration", "INVALID SQL SYNTAX"))
             return migrations
 
-        migrator._get_migrations = mock_get_migrations
+        migrator._get_migrations = mock_get_migrations  # type: ignore[method-assign]
 
         with pytest.raises(DatabaseError, match="Migration 999 failed"):
             migrator.initialize_database()
 
-    def test_database_migration_sql_syntax(self):
+    def test_database_migration_sql_syntax(self) -> None:
         """Should have valid SQL syntax in all migrations."""
         config = DatabaseConfig(memory=True)
         db = DatabaseConnection(config)

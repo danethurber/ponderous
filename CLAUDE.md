@@ -77,7 +77,7 @@ uv sync --group lint
 # Format code
 UV_NO_CONFIG=1 uv run --group lint black src tests
 
-# Lint code  
+# Lint code
 UV_NO_CONFIG=1 uv run --group lint ruff check src tests
 
 # Type checking
@@ -106,7 +106,7 @@ This project uses **uv** for Python package management.
 
 **Investigation Results**:
 - Project has both `uv.toml` and `[tool.uv]` in `pyproject.toml` configured for PyPI-only access
-- uv's configuration precedence doesn't allow project-level settings to fully override global CodeArtifact configurations  
+- uv's configuration precedence doesn't allow project-level settings to fully override global CodeArtifact configurations
 - Multiple project-level override attempts failed with same CodeArtifact authentication errors
 
 **Required Workaround**:

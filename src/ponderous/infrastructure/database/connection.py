@@ -111,7 +111,9 @@ class DatabaseConnection:
         except Exception as e:
             raise DatabaseError(f"Batch query execution failed: {e}", query) from e
 
-    def fetch_one(self, query: str, parameters: tuple | None = None) -> tuple[Any, ...] | None:
+    def fetch_one(
+        self, query: str, parameters: tuple | None = None
+    ) -> tuple[Any, ...] | None:
         """Execute query and fetch one result.
 
         Args:
@@ -181,6 +183,11 @@ class DatabaseConnection:
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
         """Context manager exit."""
         self.close()

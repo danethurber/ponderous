@@ -17,7 +17,7 @@ class DatabaseConfig(BaseModel):
     read_only: bool = False
     threads: int = Field(default=4, ge=1, le=32)
 
-    @validator("path")
+    @validator("path")  # type: ignore[misc]
     def ensure_directory_exists(cls, v: Path) -> Path:
         """Ensure the database directory exists."""
         if not v.parent.exists():
@@ -74,7 +74,7 @@ class LoggingConfig(BaseModel):
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     backup_count: int = 5
 
-    @validator("level")
+    @validator("level")  # type: ignore[misc]
     def validate_log_level(cls, v: str) -> str:
         """Validate logging level."""
         valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
@@ -96,7 +96,7 @@ class PonderousConfig(BaseModel):
     debug: bool = False
     config_dir: Path = Field(default_factory=lambda: Path.home() / ".ponderous")
 
-    @validator("config_dir")
+    @validator("config_dir")  # type: ignore[misc]
     def ensure_config_directory_exists(cls, v: Path) -> Path:
         """Ensure the configuration directory exists."""
         v.mkdir(parents=True, exist_ok=True)
