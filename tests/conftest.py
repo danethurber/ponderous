@@ -1,10 +1,10 @@
 """Pytest configuration and shared fixtures."""
 
-import pytest
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 from unittest.mock import Mock
+
+import pytest
 
 from ponderous.domain.models import (
     Card,
@@ -13,8 +13,8 @@ from ponderous.domain.models import (
     CollectionItem,
     Commander,
     DeckRecommendation,
-    User,
     MissingCard,
+    User,
 )
 from ponderous.shared.config import PonderousConfig
 
@@ -50,7 +50,7 @@ def sample_user() -> User:
 
 
 @pytest.fixture
-def sample_cards() -> List[Card]:
+def sample_cards() -> list[Card]:
     """Create sample cards for testing."""
     return [
         Card(
@@ -93,7 +93,7 @@ def sample_cards() -> List[Card]:
 
 
 @pytest.fixture
-def sample_collection_items(sample_user: User) -> List[CollectionItem]:
+def sample_collection_items(sample_user: User) -> list[CollectionItem]:
     """Create sample collection items for testing."""
     return [
         CollectionItem(
@@ -128,14 +128,14 @@ def sample_collection_items(sample_user: User) -> List[CollectionItem]:
 
 @pytest.fixture
 def sample_collection(
-    sample_user: User, sample_collection_items: List[CollectionItem]
+    sample_user: User, sample_collection_items: list[CollectionItem]
 ) -> Collection:
     """Create a sample collection for testing."""
     return Collection.from_items(sample_user.user_id, sample_collection_items)
 
 
 @pytest.fixture
-def sample_card_data() -> List[CardData]:
+def sample_card_data() -> list[CardData]:
     """Create sample card data for deck analysis testing."""
     return [
         CardData(
@@ -206,7 +206,7 @@ def sample_deck_recommendation() -> DeckRecommendation:
 
 
 @pytest.fixture
-def sample_missing_cards(sample_card_data: List[CardData]) -> List[MissingCard]:
+def sample_missing_cards(sample_card_data: list[CardData]) -> list[MissingCard]:
     """Create sample missing cards for testing."""
     return [
         MissingCard.from_card_data(
@@ -223,7 +223,7 @@ def sample_missing_cards(sample_card_data: List[CardData]) -> List[MissingCard]:
 
 
 @pytest.fixture
-def mock_moxfield_response() -> Dict:
+def mock_moxfield_response() -> dict:
     """Mock Moxfield API response for testing."""
     return {
         "collection": {

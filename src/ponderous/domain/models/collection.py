@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field
 
@@ -17,7 +16,7 @@ class CollectionItem:
     card_name: str
     quantity: int
     foil_quantity: int = 0
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
 
     def __post_init__(self) -> None:
         """Validate collection item data."""
@@ -45,11 +44,11 @@ class Collection:
     """Represents a user's complete card collection."""
 
     user_id: str
-    items: List[CollectionItem]
+    items: list[CollectionItem]
     total_cards: int
     unique_cards: int
     total_value: float
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
 
     def __post_init__(self) -> None:
         """Validate collection data."""
@@ -63,7 +62,7 @@ class Collection:
             raise ValueError("Total value cannot be negative")
 
     @property
-    def card_names(self) -> Set[str]:
+    def card_names(self) -> set[str]:
         """Get set of all card names in collection."""
         return {item.card_name for item in self.items}
 
@@ -83,12 +82,12 @@ class Collection:
         """Check if collection contains sufficient quantity of a card."""
         return self.get_card_quantity(card_name) >= required_quantity
 
-    def has_cards(self, card_names: List[str]) -> Dict[str, bool]:
+    def has_cards(self, card_names: list[str]) -> dict[str, bool]:
         """Check availability of multiple cards."""
         return {name: self.has_card(name) for name in card_names}
 
     @classmethod
-    def from_items(cls, user_id: str, items: List[CollectionItem]) -> "Collection":
+    def from_items(cls, user_id: str, items: list[CollectionItem]) -> "Collection":
         """Create collection from list of items."""
         total_cards = sum(item.total_quantity for item in items)
         unique_cards = len(items)
@@ -115,24 +114,24 @@ class CollectionAnalysis(BaseModel):
     total_value: float = Field(..., ge=0.0, description="Total collection value")
     unique_cards: int = Field(..., ge=0, description="Number of unique cards")
 
-    color_distribution: Dict[str, int] = Field(
+    color_distribution: dict[str, int] = Field(
         default_factory=dict, description="Card counts by color"
     )
-    strongest_colors: List[str] = Field(
+    strongest_colors: list[str] = Field(
         default_factory=list, description="Colors with most support"
     )
 
-    archetype_affinity: Dict[str, float] = Field(
+    archetype_affinity: dict[str, float] = Field(
         default_factory=dict, description="Scores for each archetype"
     )
-    theme_support: Dict[str, float] = Field(
+    theme_support: dict[str, float] = Field(
         default_factory=dict, description="Theme compatibility scores"
     )
 
-    mana_curve_profile: Dict[int, int] = Field(
+    mana_curve_profile: dict[int, int] = Field(
         default_factory=dict, description="CMC distribution"
     )
-    missing_staples: List[str] = Field(
+    missing_staples: list[str] = Field(
         default_factory=list, description="Key missing cards"
     )
 
@@ -146,7 +145,7 @@ class CollectionAnalysis(BaseModel):
         return self.total_value / self.total_cards if self.total_cards > 0 else 0.0
 
     @property
-    def primary_colors(self) -> List[str]:
+    def primary_colors(self) -> list[str]:
         """Get primary colors (top 3) from distribution."""
         sorted_colors = sorted(
             self.color_distribution.items(), key=lambda x: x[1], reverse=True
@@ -154,7 +153,7 @@ class CollectionAnalysis(BaseModel):
         return [color for color, _ in sorted_colors[:3]]
 
     @property
-    def best_archetypes(self) -> List[str]:
+    def best_archetypes(self) -> list[str]:
         """Get best supported archetypes (top 3)."""
         sorted_archetypes = sorted(
             self.archetype_affinity.items(), key=lambda x: x[1], reverse=True

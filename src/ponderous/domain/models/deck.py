@@ -1,7 +1,6 @@
 """Deck domain models."""
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +15,7 @@ class DeckVariant:
     budget_range: str
     avg_price: float
     total_decks: int
-    win_rate: Optional[float] = None
+    win_rate: float | None = None
 
     def __post_init__(self) -> None:
         """Validate deck variant data."""
@@ -50,7 +49,7 @@ class Deck:
 
     commander_name: str
     variant: DeckVariant
-    cards: List[str]  # Card names in the deck
+    cards: list[str]  # Card names in the deck
     total_value: float
     power_level: float
 

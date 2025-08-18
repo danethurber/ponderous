@@ -1,7 +1,6 @@
 """Commander domain models."""
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +11,7 @@ class Commander:
 
     name: str
     card_id: str
-    color_identity: List[str]
+    color_identity: list[str]
     total_decks: int
     popularity_rank: int
     avg_deck_price: float
@@ -63,7 +62,7 @@ class CommanderRecommendation(BaseModel):
     """Recommendation for a commander based on collection analysis."""
 
     commander_name: str = Field(..., description="Commander name")
-    color_identity: List[str] = Field(..., description="Commander color identity")
+    color_identity: list[str] = Field(..., description="Commander color identity")
     archetype: str = Field(..., description="Primary deck archetype")
     budget_range: str = Field(..., description="Budget range (budget/mid/high/cedh)")
     avg_deck_price: float = Field(..., ge=0.0, description="Average deck price")
@@ -82,10 +81,10 @@ class CommanderRecommendation(BaseModel):
     popularity_count: int = Field(..., ge=0, description="Number of decks on EDHREC")
     power_level: float = Field(..., ge=1.0, le=10.0, description="Power level (1-10)")
     salt_score: float = Field(..., ge=0.0, le=5.0, description="Salt score (0-5)")
-    win_rate: Optional[float] = Field(
+    win_rate: float | None = Field(
         default=None, ge=0.0, le=1.0, description="Win rate if available"
     )
-    themes: List[str] = Field(default_factory=list, description="Deck themes")
+    themes: list[str] = Field(default_factory=list, description="Deck themes")
     collection_synergy_score: float = Field(
         default=0.0, ge=0.0, description="Collection synergy score"
     )

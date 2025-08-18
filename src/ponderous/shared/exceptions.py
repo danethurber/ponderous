@@ -40,7 +40,7 @@ class MoxfieldAPIError(DataSourceError):
         """Initialize MoxfieldAPIError with status code and optional username context."""
         self.status_code = status_code
         self.username = username
-        details = {"status_code": status_code}
+        details: dict[str, Any] = {"status_code": status_code}
         if username:
             details["username"] = username
         super().__init__(f"Moxfield API error {status_code}: {message}", details)

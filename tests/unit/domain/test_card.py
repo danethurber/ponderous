@@ -1,7 +1,6 @@
 """Unit tests for Card domain models."""
 
 import pytest
-from typing import List
 
 from ponderous.domain.models.card import Card, CardData, MissingCard
 

@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -11,9 +10,9 @@ class User:
 
     user_id: str
     username: str
-    display_name: Optional[str] = None
-    created_at: Optional[datetime] = None
-    last_sync: Optional[datetime] = None
+    display_name: str | None = None
+    created_at: datetime | None = None
+    last_sync: datetime | None = None
     total_cards: int = 0
     total_value: float = 0.0
 

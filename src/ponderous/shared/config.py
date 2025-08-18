@@ -43,9 +43,7 @@ class EDHRECConfig(BaseModel):
     max_retries: int = 3
     retry_delay: float = 2.0
     rate_limit: float = 1.5  # requests per second (respectful rate limiting)
-    user_agent: str = (
-        "Ponderous/1.0.0 (MTG Collection Analyzer; +https://github.com/ponderous-mtg/ponderous)"
-    )
+    user_agent: str = "Ponderous/1.0.0 (MTG Collection Analyzer; +https://github.com/ponderous-mtg/ponderous)"
 
 
 class AnalysisConfig(BaseModel):

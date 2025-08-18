@@ -18,7 +18,13 @@
       "Bash(UV_NO_CONFIG=1 uv run --group test pytest tests/unit/domain/test_card.py::TestCard::test_create_card_with_valid_data -v)",
       "WebFetch(domain:github.com)",
       "Bash(env)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(UV_NO_CONFIG=1 uv run --group test pytest --version)",
+      "Bash(UV_NO_CONFIG=1 uv run --group dev pre-commit run --all-files)",
+      "Bash(UV_NO_CONFIG=1 uv run --group lint ruff check --fix src tests)",
+      "Bash(UV_NO_CONFIG=1 uv run --group lint ruff format --check src tests)",
+      "Bash(UV_NO_CONFIG=1 uv run --group lint ruff format src tests)",
+      "Bash(UV_NO_CONFIG=1 uv sync --group test --group lint --group dev)"
     ],
     "deny": [],
     "ask": [],

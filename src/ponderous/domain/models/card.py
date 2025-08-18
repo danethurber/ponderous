@@ -1,7 +1,6 @@
 """Card domain models."""
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -12,20 +11,20 @@ class Card:
 
     name: str
     card_id: str
-    mana_cost: Optional[str] = None
-    cmc: Optional[int] = None
-    color_identity: Optional[List[str]] = None
-    type_line: Optional[str] = None
-    oracle_text: Optional[str] = None
-    power: Optional[str] = None
-    toughness: Optional[str] = None
-    loyalty: Optional[str] = None
-    rarity: Optional[str] = None
-    set_code: Optional[str] = None
-    collector_number: Optional[str] = None
-    image_url: Optional[str] = None
-    price_usd: Optional[float] = None
-    price_eur: Optional[float] = None
+    mana_cost: str | None = None
+    cmc: int | None = None
+    color_identity: list[str] | None = None
+    type_line: str | None = None
+    oracle_text: str | None = None
+    power: str | None = None
+    toughness: str | None = None
+    loyalty: str | None = None
+    rarity: str | None = None
+    set_code: str | None = None
+    collector_number: str | None = None
+    image_url: str | None = None
+    price_usd: float | None = None
+    price_eur: float | None = None
 
     def __post_init__(self) -> None:
         """Validate card data after initialization."""
@@ -64,14 +63,12 @@ class CardData(BaseModel):
         default="staple",
         description="Card category (signature, high_synergy, staple, basic)",
     )
-    price_usd: Optional[float] = Field(default=None, ge=0.0, description="Price in USD")
+    price_usd: float | None = Field(default=None, ge=0.0, description="Price in USD")
     is_basic_land: bool = Field(
         default=False, description="Whether card is a basic land"
     )
-    cmc: Optional[int] = Field(default=None, ge=0, description="Converted mana cost")
-    color_identity: Optional[List[str]] = Field(
-        default=None, description="Color identity"
-    )
+    cmc: int | None = Field(default=None, ge=0, description="Converted mana cost")
+    color_identity: list[str] | None = Field(default=None, description="Color identity")
 
     class Config:
         """Pydantic configuration."""
@@ -106,7 +103,7 @@ class MissingCard:
     card_data: CardData
     estimated_cost: float
     priority_level: str  # "critical", "high", "medium", "low"
-    alternatives: List[str]  # Alternative card names
+    alternatives: list[str]  # Alternative card names
 
     def __post_init__(self) -> None:
         """Validate missing card data."""
@@ -125,8 +122,8 @@ class MissingCard:
     def from_card_data(
         cls,
         card_data: CardData,
-        estimated_cost: Optional[float] = None,
-        alternatives: Optional[List[str]] = None,
+        estimated_cost: float | None = None,
+        alternatives: list[str] | None = None,
     ) -> "MissingCard":
         """Create missing card from card data with priority calculation."""
         cost = estimated_cost or card_data.price_usd or 0.0

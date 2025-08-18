@@ -1,11 +1,10 @@
 """Unit tests for database infrastructure."""
 
 import pytest
-from unittest.mock import Mock, patch
 
 from ponderous.infrastructure.database.connection import DatabaseConnection
 from ponderous.infrastructure.database.migrations import DatabaseMigrator
-from ponderous.shared.config import DatabaseConfig, PonderousConfig
+from ponderous.shared.config import DatabaseConfig
 from ponderous.shared.exceptions import DatabaseError
 
 
@@ -77,11 +76,10 @@ class TestDatabaseConnection:
 
         db.execute_query("CREATE TABLE test (id INTEGER PRIMARY KEY)")
 
-        with pytest.raises(DatabaseError):
-            with db.transaction() as conn:
-                conn.execute("INSERT INTO test VALUES (1)")
-                # This should cause an error (duplicate primary key)
-                conn.execute("INSERT INTO test VALUES (1)")
+        with pytest.raises(DatabaseError), db.transaction() as conn:
+            conn.execute("INSERT INTO test VALUES (1)")
+            # This should cause an error (duplicate primary key)
+            conn.execute("INSERT INTO test VALUES (1)")
 
         # Check that no data was committed
         results = db.fetch_all("SELECT * FROM test")

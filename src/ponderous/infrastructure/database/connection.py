@@ -1,9 +1,10 @@
 """Database connection management for DuckDB."""
 
-import duckdb
+from collections.abc import Generator
 from contextlib import contextmanager
-from pathlib import Path
-from typing import Any, Generator, Optional
+from typing import Any
+
+import duckdb
 
 from ponderous.shared.config import DatabaseConfig, get_config
 from ponderous.shared.exceptions import DatabaseError
@@ -12,14 +13,14 @@ from ponderous.shared.exceptions import DatabaseError
 class DatabaseConnection:
     """Manages DuckDB connections with proper resource handling."""
 
-    def __init__(self, config: Optional[DatabaseConfig] = None) -> None:
+    def __init__(self, config: DatabaseConfig | None = None) -> None:
         """Initialize database connection manager.
 
         Args:
             config: Database configuration. Uses global config if None.
         """
         self.config = config or get_config().database
-        self._connection: Optional[duckdb.DuckDBPyConnection] = None
+        self._connection: duckdb.DuckDBPyConnection | None = None
 
     @property
     def connection(self) -> duckdb.DuckDBPyConnection:
@@ -48,7 +49,7 @@ class DatabaseConnection:
             return conn
 
         except Exception as e:
-            raise DatabaseError(f"Failed to create database connection: {e}")
+            raise DatabaseError(f"Failed to create database connection: {e}") from e
 
     @contextmanager
     def get_connection(self) -> Generator[duckdb.DuckDBPyConnection, None, None]:
@@ -57,7 +58,7 @@ class DatabaseConnection:
             yield self.connection
         except Exception as e:
             # Log error and re-raise
-            raise DatabaseError(f"Database operation failed: {e}")
+            raise DatabaseError(f"Database operation failed: {e}") from e
 
     @contextmanager
     def transaction(self) -> Generator[duckdb.DuckDBPyConnection, None, None]:
@@ -69,9 +70,9 @@ class DatabaseConnection:
             conn.execute("COMMIT")
         except Exception as e:
             conn.execute("ROLLBACK")
-            raise DatabaseError(f"Transaction failed: {e}")
+            raise DatabaseError(f"Transaction failed: {e}") from e
 
-    def execute_query(self, query: str, parameters: Optional[tuple] = None) -> Any:
+    def execute_query(self, query: str, parameters: tuple | None = None) -> Any:
         """Execute a query with optional parameters.
 
         Args:
@@ -91,7 +92,7 @@ class DatabaseConnection:
                 else:
                     return conn.execute(query)
         except Exception as e:
-            raise DatabaseError(f"Query execution failed: {e}", query)
+            raise DatabaseError(f"Query execution failed: {e}", query) from e
 
     def execute_many(self, query: str, parameters_list: list) -> None:
         """Execute a query multiple times with different parameters.
@@ -108,11 +109,9 @@ class DatabaseConnection:
                 for parameters in parameters_list:
                     conn.execute(query, parameters)
         except Exception as e:
-            raise DatabaseError(f"Batch query execution failed: {e}", query)
+            raise DatabaseError(f"Batch query execution failed: {e}", query) from e
 
-    def fetch_one(
-        self, query: str, parameters: Optional[tuple] = None
-    ) -> Optional[tuple]:
+    def fetch_one(self, query: str, parameters: tuple | None = None) -> tuple[Any, ...] | None:
         """Execute query and fetch one result.
 
         Args:
@@ -123,9 +122,9 @@ class DatabaseConnection:
             Single result tuple or None
         """
         result = self.execute_query(query, parameters)
-        return result.fetchone()
+        return result.fetchone() if result else None
 
-    def fetch_all(self, query: str, parameters: Optional[tuple] = None) -> list:
+    def fetch_all(self, query: str, parameters: tuple | None = None) -> list[Any]:
         """Execute query and fetch all results.
 
         Args:
@@ -136,7 +135,7 @@ class DatabaseConnection:
             List of result tuples
         """
         result = self.execute_query(query, parameters)
-        return result.fetchall()
+        return result.fetchall() if result else []
 
     def table_exists(self, table_name: str) -> bool:
         """Check if a table exists in the database.
@@ -148,14 +147,14 @@ class DatabaseConnection:
             True if table exists, False otherwise
         """
         query = """
-            SELECT COUNT(*) 
-            FROM information_schema.tables 
+            SELECT COUNT(*)
+            FROM information_schema.tables
             WHERE table_name = ?
         """
         result = self.fetch_one(query, (table_name,))
         return result[0] > 0 if result else False
 
-    def get_table_schema(self, table_name: str) -> list:
+    def get_table_schema(self, table_name: str) -> list[Any]:
         """Get schema information for a table.
 
         Args:
@@ -182,6 +181,6 @@ class DatabaseConnection:
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         """Context manager exit."""
         self.close()

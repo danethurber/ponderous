@@ -1,7 +1,5 @@
 """Database migrations for Ponderous schema setup."""
 
-from typing import List, Optional
-
 from ponderous.infrastructure.database.connection import DatabaseConnection
 from ponderous.shared.exceptions import DatabaseError
 
@@ -23,7 +21,7 @@ class DatabaseMigrator:
             self._create_migration_table()
             self._run_all_migrations()
         except Exception as e:
-            raise DatabaseError(f"Database initialization failed: {e}")
+            raise DatabaseError(f"Database initialization failed: {e}") from e
 
     def _create_migration_table(self) -> None:
         """Create migration tracking table."""
@@ -77,9 +75,9 @@ class DatabaseMigrator:
                 )
 
         except Exception as e:
-            raise DatabaseError(f"Migration {version} failed: {e}")
+            raise DatabaseError(f"Migration {version} failed: {e}") from e
 
-    def _get_migrations(self) -> List[tuple]:
+    def _get_migrations(self) -> list[tuple]:
         """Get list of all migrations (version, description, sql).
 
         Returns:
@@ -132,10 +130,10 @@ class DatabaseMigrator:
                 rate_limit_per_second REAL DEFAULT 1.0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            
+
             -- Insert default sources
             INSERT INTO collection_sources (source_id, source_name, api_endpoint, rate_limit_per_second)
-            VALUES 
+            VALUES
                 ('moxfield', 'Moxfield', 'https://api2.moxfield.com/v2', 2.0),
                 ('archidekt', 'Archidekt', 'https://archidekt.com/api', 1.0)
         """
@@ -218,17 +216,17 @@ class DatabaseMigrator:
             CREATE INDEX idx_user_collections_user_id ON user_collections(user_id);
             CREATE INDEX idx_user_collections_card_name ON user_collections(card_name);
             CREATE INDEX idx_user_collections_source ON user_collections(source_id);
-            
+
             -- Commander indexes
             CREATE INDEX idx_commanders_popularity ON commanders(popularity_rank);
             CREATE INDEX idx_commanders_color_identity ON commanders(color_identity);
             CREATE INDEX idx_commanders_power_level ON commanders(power_level);
-            
+
             -- Deck statistics indexes
             CREATE INDEX idx_deck_stats_commander ON deck_statistics(commander_name);
             CREATE INDEX idx_deck_stats_archetype ON deck_statistics(archetype_id);
             CREATE INDEX idx_deck_stats_budget ON deck_statistics(budget_range);
-            
+
             -- Deck card inclusions indexes
             CREATE INDEX idx_deck_inclusions_commander ON deck_card_inclusions(commander_name);
             CREATE INDEX idx_deck_inclusions_card ON deck_card_inclusions(card_name);
@@ -268,8 +266,8 @@ class DatabaseMigrator:
 
         # Get table information
         tables_query = """
-            SELECT table_name 
-            FROM information_schema.tables 
+            SELECT table_name
+            FROM information_schema.tables
             WHERE table_schema = 'main'
         """
         tables = self.db.fetch_all(tables_query)
