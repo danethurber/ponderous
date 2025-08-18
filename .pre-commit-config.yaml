@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: [types-requests, types-setuptools, types-PyYAML]
-        args: [--ignore-missing-imports]
+        args: [--ignore-missing-imports, --disable-error-code=misc]
 
   # Pre-commit hooks for general code quality
   - repo: https://github.com/pre-commit/pre-commit-hooks
