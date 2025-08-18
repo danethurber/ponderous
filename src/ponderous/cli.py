@@ -5,6 +5,7 @@ This module provides the command-line interface for analyzing MTG collections
 and discovering buildable Commander decks using Click framework and Rich output.
 """
 
+import asyncio
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -17,6 +18,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from ponderous import __version__
+from ponderous.application.services import CollectionService
 from ponderous.shared.config import PonderousConfig, get_config
 from ponderous.shared.exceptions import PonderousError
 
@@ -169,7 +171,7 @@ def sync_collection(
     ctx: click.Context,  # noqa: ARG001
     username: str,
     source: str,
-    force: bool,  # noqa: ARG001
+    force: bool,
 ) -> None:
     """
     🔄 Sync your card collection from external platforms.
@@ -187,29 +189,96 @@ def sync_collection(
     if force:
         console.print("[yellow]Force sync enabled - ignoring cache[/yellow]")
 
-    # TODO: Implement collection sync logic
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Connecting to API...", total=None)
-        # Simulate API connection
-        import time
+    # Real implementation using collection service
+    async def _run_sync() -> None:
+        """Run the async sync operation."""
+        collection_service = CollectionService()
 
-        time.sleep(1)
+        try:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Connecting to API...", total=None)
 
-        progress.update(task, description="Downloading collection data...")
-        time.sleep(1)
+                # Validate username format first
+                if not collection_service.validate_username_format(username, source):
+                    raise PonderousError(
+                        f"Invalid username format for {source}: {username}"
+                    )
 
-        progress.update(task, description="Processing and validating...")
-        time.sleep(1)
+                progress.update(task, description="Downloading collection data...")
 
-        progress.update(task, description="Storing in database...")
-        time.sleep(0.5)
+                # Perform the actual sync
+                response = await collection_service.sync_user_collection(
+                    username=username,
+                    source=source,
+                    force_refresh=force,
+                    include_profile=True,
+                )
 
-    console.print("[yellow]⚠️  Collection sync not yet implemented[/yellow]")
-    console.print("Coming soon: Full integration with Moxfield API")
+                progress.update(task, description="Processing and validating...")
+
+                if response.success:
+                    progress.update(task, description="✅ Sync completed successfully")
+
+                    # Display success summary
+                    console.print()
+                    console.print(
+                        "🎉 [bold green]Collection sync completed![/bold green]"
+                    )
+                    console.print(
+                        f"📊 {response.unique_cards} unique cards ({response.total_cards} total)"
+                    )
+
+                    if response.sync_duration_seconds:
+                        console.print(
+                            f"⏱️  Completed in {response.sync_duration_seconds:.1f} seconds"
+                        )
+
+                    # Show collection summary table
+                    summary_table = Table(show_header=True, header_style="bold magenta")
+                    summary_table.add_column("Metric", style="dim")
+                    summary_table.add_column("Value", style="cyan")
+
+                    summary_table.add_row("Username", response.username)
+                    summary_table.add_row("Source", response.source.title())
+                    summary_table.add_row("Unique Cards", str(response.unique_cards))
+                    summary_table.add_row("Total Cards", str(response.total_cards))
+                    summary_table.add_row(
+                        "Items Processed", str(response.items_processed)
+                    )
+                    if response.sync_duration_seconds:
+                        summary_table.add_row(
+                            "Duration", f"{response.sync_duration_seconds:.1f}s"
+                        )
+
+                    console.print("\n📋 [bold]Sync Summary:[/bold]")
+                    console.print(summary_table)
+
+                else:
+                    progress.update(task, description="❌ Sync failed")
+                    console.print()
+                    console.print("[bold red]❌ Collection sync failed![/bold red]")
+                    if response.error_message:
+                        console.print(f"Error: {response.error_message}")
+                    raise PonderousError("Collection sync failed")
+
+        except PonderousError:
+            raise
+        except Exception as e:
+            console.print(
+                f"\n[bold red]❌ Unexpected error during sync:[/bold red] {e}"
+            )
+            raise PonderousError(f"Collection sync failed: {e}") from e
+
+    # Run the async sync operation
+    try:
+        asyncio.run(_run_sync())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]⚠️  Sync cancelled by user[/yellow]")
+        sys.exit(1)
 
 
 @cli.command("discover-commanders")

@@ -26,7 +26,8 @@
       "Bash(UV_NO_CONFIG=1 uv run --group lint ruff format src tests)",
       "Bash(UV_NO_CONFIG=1 uv sync --group test --group lint --group dev)",
       "Bash(gh run list:*)",
-      "Bash(UV_NO_CONFIG=1 uv run --group dev pre-commit run bandit --all-files)"
+      "Bash(UV_NO_CONFIG=1 uv run --group dev pre-commit run bandit --all-files)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": [],

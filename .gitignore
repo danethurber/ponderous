@@ -133,6 +133,7 @@ dmypy.json
 
 # Ponderous specific
 ponderous.db
+*.duckdb
 .ponderous/
 bandit-report.json
 
