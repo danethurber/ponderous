@@ -55,6 +55,7 @@ class PythonQualityChecker(QualityChecker):
     """Python-specific quality checker using AST analysis."""
 
     def __init__(self) -> None:
+        """Initialize Python quality checker with default thresholds."""
         self.max_function_length = 50
         self.max_class_length = 300
         self.max_complexity = 10
@@ -325,6 +326,7 @@ class TestFileQualityChecker(PythonQualityChecker):
     """Quality checker specifically for test files."""
 
     def __init__(self) -> None:
+        """Initialize test file quality checker with more lenient thresholds."""
         super().__init__()
         # More lenient for test files
         self.max_function_length = 80
@@ -432,42 +434,9 @@ class ClaudeQualityGate:
 
         print(f"🔍 Checking {file_path}")
 
-        # Determine file type and checker
+        # Determine file type and run appropriate checker
         if file_path.suffix == ".py":
-            if self._is_test_file(file_path):
-                checker = self.checkers["test"]
-            else:
-                checker = self.checkers["python"]
-
-            issues = checker.check_file(file_path)
-            self.issues_found.extend(issues)
-
-            # Run external tools
-            self._run_external_checks(file_path)
-
-            # Determine if file passed
-            error_count = sum(1 for issue in issues if issue.severity == "error")
-            warning_count = sum(1 for issue in issues if issue.severity == "warning")
-            info_count = sum(1 for issue in issues if issue.severity == "info")
-
-            if error_count > 0:
-                print(f"❌ {file_path} ({error_count} errors)")
-                return False
-            elif self.quick_mode and warning_count == 0:
-                # In quick mode, only report if there are warnings or errors
-                return True
-            else:
-                if warning_count > 0 or info_count > 0:
-                    if self.quick_mode:
-                        print(f"⚠️  {file_path} ({warning_count} warnings)")
-                    else:
-                        print(
-                            f"⚠️  {file_path} ({warning_count} warnings, {info_count} suggestions)"
-                        )
-                else:
-                    print(f"✅ {file_path}")
-                return True
-
+            return self._check_python_file(file_path)
         elif file_path.suffix in [".md", ".rst"]:
             return self._check_documentation_file(file_path)
         elif file_path.suffix in [".yml", ".yaml"]:
@@ -475,6 +444,48 @@ class ClaudeQualityGate:
         # TOML checking removed per user preference
         else:
             print(f"✅ {file_path} (unknown type, skipped)")
+            return True
+
+    def _check_python_file(self, file_path: Path) -> bool:
+        """Check a Python file for quality issues."""
+        if self._is_test_file(file_path):
+            checker = self.checkers["test"]
+        else:
+            checker = self.checkers["python"]
+
+        issues = checker.check_file(file_path)
+        self.issues_found.extend(issues)
+
+        # Run external tools
+        self._run_external_checks(file_path)
+
+        # Determine if file passed
+        return self._evaluate_check_results(file_path, issues)
+
+    def _evaluate_check_results(
+        self, file_path: Path, issues: list[QualityIssue]
+    ) -> bool:
+        """Evaluate check results and print appropriate message."""
+        error_count = sum(1 for issue in issues if issue.severity == "error")
+        warning_count = sum(1 for issue in issues if issue.severity == "warning")
+        info_count = sum(1 for issue in issues if issue.severity == "info")
+
+        if error_count > 0:
+            print(f"❌ {file_path} ({error_count} errors)")
+            return False
+        elif self.quick_mode and warning_count == 0:
+            # In quick mode, only report if there are warnings or errors
+            return True
+        else:
+            if warning_count > 0 or info_count > 0:
+                if self.quick_mode:
+                    print(f"⚠️  {file_path} ({warning_count} warnings)")
+                else:
+                    print(
+                        f"⚠️  {file_path} ({warning_count} warnings, {info_count} suggestions)"
+                    )
+            else:
+                print(f"✅ {file_path}")
             return True
 
     def _is_test_file(self, file_path: Path) -> bool:
@@ -591,39 +602,48 @@ class ClaudeQualityGate:
         warnings = [i for i in self.issues_found if i.severity == "warning"]
         info = [i for i in self.issues_found if i.severity == "info"]
 
+        self._print_summary_header(errors, warnings, info)
+        self._print_issues(errors, "❌ Errors:", show_suggestions=True)
+        self._print_warnings(warnings)
+        self._print_suggestions(info)
+
+    def _print_summary_header(self, errors: list, warnings: list, info: list) -> None:
+        """Print the summary header with counts."""
         print("\n📊 Quality Check Summary:")
         print(f"   Errors: {len(errors)}")
         print(f"   Warnings: {len(warnings)}")
         print(f"   Suggestions: {len(info)}")
 
-        # Print errors first
-        if errors:
-            print("\n❌ Errors:")
-            for issue in errors:
-                location = f":{issue.line_number}" if issue.line_number else ""
-                print(f"   {issue.file_path}{location}: {issue.message}")
-                if issue.suggestion:
-                    print(f"      💡 {issue.suggestion}")
+    def _print_issues(
+        self, issues: list[QualityIssue], header: str, show_suggestions: bool = False
+    ) -> None:
+        """Print a list of issues with optional suggestions."""
+        if not issues:
+            return
+        print(f"\n{header}")
+        for issue in issues:
+            location = f":{issue.line_number}" if issue.line_number else ""
+            print(f"   {issue.file_path}{location}: {issue.message}")
+            if show_suggestions and issue.suggestion:
+                print(f"      💡 {issue.suggestion}")
 
-        # Print warnings if not too many
-        if warnings and len(warnings) <= 10:
-            print("\n⚠️  Warnings:")
-            for issue in warnings:
-                location = f":{issue.line_number}" if issue.line_number else ""
-                print(f"   {issue.file_path}{location}: {issue.message}")
-        elif warnings:
+    def _print_warnings(self, warnings: list[QualityIssue]) -> None:
+        """Print warnings with truncation for large lists."""
+        if not warnings:
+            return
+        if len(warnings) <= 10:
+            self._print_issues(warnings, "⚠️  Warnings:")
+        else:
             print(f"\n⚠️  {len(warnings)} warnings found (use --verbose to see all)")
 
-        # Print suggestions only if requested or few in number
+    def _print_suggestions(self, info: list[QualityIssue]) -> None:
+        """Print suggestions if few in number."""
         if info and len(info) <= 5:
-            print("\n💡 Suggestions:")
-            for issue in info:
-                location = f":{issue.line_number}" if issue.line_number else ""
-                print(f"   {issue.file_path}{location}: {issue.message}")
+            self._print_issues(info, "💡 Suggestions:")
 
 
-def main() -> int:
-    """Main entry point for the quality gate hook."""
+def _create_argument_parser() -> argparse.ArgumentParser:
+    """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
         description="Claude Code Quality Gate Hook for Ponderous",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -653,36 +673,32 @@ Examples:
         action="store_true",
         help="Quick check mode for hooks (check only critical issues)",
     )
+    return parser
 
-    args = parser.parse_args()
 
-    # Check environment variables
-    enabled = (
-        not args.disable and os.getenv("CLAUDE_HOOK_ENABLED", "true").lower() == "true"
-    )
-    strict_mode = (
-        args.strict or os.getenv("CLAUDE_HOOK_STRICT", "false").lower() == "true"
-    )
+def _determine_files_to_check(args: argparse.Namespace) -> list[Path] | int:
+    """Determine which files to check based on arguments and context.
 
-    # Create quality gate instance
-    quality_gate = ClaudeQualityGate(
-        strict_mode=strict_mode, enabled=enabled, quick_mode=args.quick_check
-    )
-
-    # Determine which files to check
+    Returns:
+        List of file paths to check, or exit code if should exit early.
+    """
     if args.quick_check:
-        # Quick check mode - check recent git changes or CLAUDE_FILE_PATHS
-        claude_files = os.getenv("CLAUDE_FILE_PATHS")
-        if claude_files:
-            file_paths = [
-                Path(f.strip())
-                for f in claude_files.split()
-                if Path(f.strip()).exists()
-            ]
-            if not file_paths:
-                return 0  # No valid files to check in quick mode
+        # Quick check mode - check specified files or CLAUDE_FILE_PATHS env var
+        if args.files:
+            file_paths = [Path(f) for f in args.files if Path(f).exists()]
         else:
-            return 0  # No files specified for quick check
+            claude_files = os.getenv("CLAUDE_FILE_PATHS")
+            if claude_files:
+                file_paths = [
+                    Path(f.strip())
+                    for f in claude_files.split()
+                    if Path(f.strip()).exists()
+                ]
+            else:
+                file_paths = []
+        if not file_paths:
+            return 0  # No valid files to check in quick mode
+        return file_paths
     elif args.files:
         file_paths = []
         for file_arg in args.files:
@@ -699,51 +715,86 @@ Examples:
         if not file_paths:
             print("❌ No valid files specified")
             return 1
+        return file_paths
     else:
-        # Check git staged files if available
-        try:
-            result = subprocess.run(
-                [
-                    "/usr/bin/git",
-                    "diff",
-                    "--cached",
-                    "--name-only",
-                    "--diff-filter=ACM",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                staged_files = result.stdout.strip().split("\n")
-                file_paths = [Path(f) for f in staged_files if Path(f).exists()]
-                if file_paths:
-                    print(f"🔄 Checking {len(file_paths)} staged files...")
-                else:
-                    print("💡 No staged files to check")
-                    return 0
+        return _check_git_staged_files()
+
+
+def _check_git_staged_files() -> list[Path] | int:
+    """Check git staged files if available.
+
+    Returns:
+        List of staged file paths, or exit code if should exit early.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "/usr/bin/git",
+                "diff",
+                "--cached",
+                "--name-only",
+                "--diff-filter=ACM",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            staged_files = result.stdout.strip().split("\n")
+            file_paths = [Path(f) for f in staged_files if Path(f).exists()]
+            if file_paths:
+                print(f"🔄 Checking {len(file_paths)} staged files...")
+                return file_paths
             else:
-                # Fallback: suggest usage
-                if Path(".git").exists():
-                    print(
-                        "💡 No staged files found. Stage files with 'git add' or specify files to check:"
-                    )
-                    print(
-                        "   Example: python .claude/hooks/claude_quality_gate.py src/ponderous/domain/models/card.py"
-                    )
-                    return 0
-                else:
-                    print("💡 Specify files to check:")
-                    print(
-                        "   Example: python .claude/hooks/claude_quality_gate.py src/ponderous/domain/models/card.py"
-                    )
-                    return 0
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            print("💡 Specify files to check:")
-            print(
-                "   Example: uv run python scripts/claude_quality_gate.py src/ponderous/domain/models/card.py"
-            )
-            return 0
+                print("💡 No staged files to check")
+                return 0
+        else:
+            # Fallback: suggest usage
+            if Path(".git").exists():
+                print(
+                    "💡 No staged files found. Stage files with 'git add' or specify files to check:"
+                )
+                print(
+                    "   Example: python .claude/hooks/claude_quality_gate.py src/ponderous/domain/models/card.py"
+                )
+                return 0
+            else:
+                print("💡 Specify files to check:")
+                print(
+                    "   Example: python .claude/hooks/claude_quality_gate.py src/ponderous/domain/models/card.py"
+                )
+                return 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        print("💡 Specify files to check:")
+        print(
+            "   Example: uv run python scripts/claude_quality_gate.py src/ponderous/domain/models/card.py"
+        )
+        return 0
+
+
+def main() -> int:
+    """Main entry point for the quality gate hook."""
+    parser = _create_argument_parser()
+    args = parser.parse_args()
+
+    # Check environment variables
+    enabled = (
+        not args.disable and os.getenv("CLAUDE_HOOK_ENABLED", "true").lower() == "true"
+    )
+    strict_mode = (
+        args.strict or os.getenv("CLAUDE_HOOK_STRICT", "false").lower() == "true"
+    )
+
+    # Create quality gate instance
+    quality_gate = ClaudeQualityGate(
+        strict_mode=strict_mode, enabled=enabled, quick_mode=args.quick_check
+    )
+
+    # Determine which files to check
+    file_paths_result = _determine_files_to_check(args)
+    if isinstance(file_paths_result, int):
+        return file_paths_result  # Early return with exit code
+    file_paths = file_paths_result
 
     # Run quality checks
     success = quality_gate.run_checks(file_paths)

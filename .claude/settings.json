@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$PWD\" && python .claude/hooks/claude_quality_gate.py \"$CLAUDE_FILE_PATHS\""
+            "command": "cd \"$PWD\" && python .claude/hooks/claude_quality_gate.py --quick-check $CLAUDE_FILE_PATHS"
           }
         ]
       }

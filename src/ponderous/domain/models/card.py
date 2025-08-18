@@ -7,7 +7,10 @@ from pydantic import BaseModel, Field
 
 @dataclass(frozen=True)
 class Card:
-    """Immutable card entity representing a Magic: The Gathering card."""
+    """Immutable card entity representing a Magic: The Gathering card.
+
+    Represents a Magic: The Gathering card with core attributes.
+    """
 
     name: str
     card_id: str
