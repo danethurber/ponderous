@@ -31,19 +31,20 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Install dependencies
-        run: uv sync --group test --group lint --group dev
+        run: just setup
 
       - name: Run linting
-        run: |
-          uv run --group lint ruff check src tests
-          uv run --group lint ruff format --check src tests
+        run: just lint
 
       - name: Run type checking
-        run: uv run --group lint mypy src
+        run: just typecheck
 
       - name: Run tests
-        run: uv run --group test pytest --cov=ponderous --cov-report=xml --cov-report=term-missing
+        run: just test --cov=ponderous --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -63,11 +64,14 @@ jobs:
       - name: Set up Python
         run: uv python install 3.11
 
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Install dependencies
-        run: uv sync --group dev
+        run: just setup
 
       - name: Run bandit security scan
-        run: uv run --group dev bandit -r src/ -f json -o bandit-report.json
+        run: just security-scan -f json -o bandit-report.json
 
       - name: Upload bandit report
         uses: actions/upload-artifact@v4
@@ -88,8 +92,11 @@ jobs:
       - name: Set up Python
         run: uv python install 3.11
 
+      - name: Install just
+        uses: extractions/setup-just@v3
+
       - name: Build package
-        run: uv build
+        run: just build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

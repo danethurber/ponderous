@@ -294,8 +294,9 @@ class TestMoxfieldCollectionItems:
                 "rarity": "rare",
                 "cmc": 4,
                 "colors": ["W", "U"],
+                "colorIdentity": ["W", "U"],
                 "type": "Creature — Human Wizard",
-                "text": "Test oracle text.",
+                "oracleText": "Test oracle text.",
             }
         }
 
@@ -402,6 +403,12 @@ class TestMoxfieldCollectionSource:
             assert hasattr(source, "name")
             assert source.name == "moxfield_collection"
 
+            # Force execution by consuming the resources to trigger function calls
+            resources = list(source.resources.values())
+            for resource in resources:
+                # Consume the resource to trigger execution
+                list(resource)
+
             # Verify the resources were called with correct parameters
             mock_profile_source.assert_called_once_with("testuser", config=mock_config)
             mock_items_resource.assert_called_once_with("testuser", config=mock_config)
@@ -426,7 +433,13 @@ class TestMoxfieldCollectionSource:
             mock_items_resource.return_value = mock_empty_gen()
 
             # Execute the source without config
-            moxfield_collection_source("testuser")
+            source = moxfield_collection_source("testuser")
+
+            # Force execution by consuming the resources to trigger function calls
+            resources = list(source.resources.values())
+            for resource in resources:
+                # Consume the resource to trigger execution
+                list(resource)
 
             # Verify the resources were called with default config
             mock_profile_source.assert_called_once_with("testuser", config=None)

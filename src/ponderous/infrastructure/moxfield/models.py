@@ -53,6 +53,9 @@ class MoxfieldCardData(BaseModel):
     price_usd: float | None = Field(
         None, ge=0, description="USD price", alias="priceUsd"
     )
+    price_usd_foil: float | None = Field(
+        None, ge=0, description="USD foil price", alias="priceUsdFoil"
+    )
     price_eur: float | None = Field(
         None, ge=0, description="EUR price", alias="priceEur"
     )

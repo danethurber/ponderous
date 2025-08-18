@@ -166,7 +166,7 @@ class SyncCollectionUseCase:
         try:
             # Prepare data sources
             collection_source = moxfield_collection_source(
-                request.username, request.force_refresh
+                request.username, config=None
             )
 
             sources = [

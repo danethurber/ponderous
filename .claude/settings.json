@@ -1,4 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "UV_NO_CONFIG=1 uv run --group test pytest tests/**/*.py*",
+      "UV_NO_CONFIG=1 uv run --group test pytest -k *",
+      "make test*",
+      "just *",
+      "~/.local/bin/just *"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -7,17 +16,6 @@
           {
             "type": "command",
             "command": "cd \"$PWD\" && python .claude/hooks/claude_quality_gate.py --quick-check $CLAUDE_FILE_PATHS"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": ".*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd \"$PWD\" && python .claude/hooks/claude_quality_gate.py --quick-check"
           }
         ]
       }

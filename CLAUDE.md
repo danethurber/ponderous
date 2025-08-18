@@ -46,54 +46,96 @@ Ponderous follows clean architecture with clear separation between layers:
 
 ## Development Commands
 
+All development commands use the `just` command runner for ergonomic argument passing.
+
+### Environment Setup
+```bash
+# Complete development environment setup (install dependencies and pre-commit hooks)
+just setup
+
+# Install dependencies only
+just install
+```
+
 ### Testing
 ```bash
-# Install test dependencies
-uv sync --group test
-
-# Run all tests with coverage (includes pytest-sugar for better output)
-uv run --group test pytest
+# Run all tests with coverage
+just test
 
 # Run specific test categories
-uv run --group test pytest -m unit
-uv run --group test pytest -m integration
-uv run --group test pytest -m e2e
+just test -m unit
+just test -m integration
+just test -m e2e
 
 # Run tests in parallel
-uv run --group test pytest -n auto
+just test -n auto
 
-# Run specific test file
-uv run --group test pytest tests/unit/domain/test_card.py -v
+# Run specific test file with verbose output
+just test tests/unit/domain/test_card.py -v
 
 # Run with specific markers
-uv run --group test pytest -m "not slow" -v
+just test -m "not slow" -v
+
+# Run tests with coverage report
+just test-coverage
 ```
 
 ### Code Quality
 ```bash
-# Install lint dependencies
-uv sync --group lint
+# Run all linting (ruff check + format check)
+just lint
 
-# Format code
-UV_NO_CONFIG=1 uv run --group lint black src tests
+# Auto-fix linting issues
+just lint --fix
 
-# Lint code
-UV_NO_CONFIG=1 uv run --group lint ruff check src tests
+# Format code (black + ruff format)
+just format
+
+# Check formatting only
+just format-check
 
 # Type checking
-UV_NO_CONFIG=1 uv run --group lint mypy src
+just typecheck
 
-# Quality gate (all files)
-python .claude/hooks/claude_quality_gate.py src/ tests/
+# Type check specific file
+just typecheck src/ponderous/domain/models/card.py
 
-# Quality gate (single file)
-python .claude/hooks/claude_quality_gate.py src/ponderous/domain/models/card.py
-
-# Quality gate (quick check mode for hooks)
-python .claude/hooks/claude_quality_gate.py --quick-check
+# Security scan
+just security-scan
 
 # Run pre-commit hooks manually
-uv run --group dev pre-commit run --all-files
+just pre-commit
+
+# Run all validation checks
+just validate
+
+# Quick development checks (fast subset)
+just quick
+```
+
+### Application Commands
+```bash
+# Run the CLI application
+just ponderous --help
+just ponderous sync-collection --username your_username --source moxfield
+
+# Alternative alias
+just run --help
+```
+
+### Project Management
+```bash
+# Clean build artifacts
+just clean
+
+# Build package for distribution
+just build
+
+# Full CI validation pipeline
+just ci
+
+# View all available commands
+just --list
 ```
 
 ## Package Management

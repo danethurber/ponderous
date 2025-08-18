@@ -50,7 +50,7 @@ class TestMoxfieldClient:
         assert client.config == config
         assert client.base_url == "https://api.test.moxfield.com/v2"
         assert client.rate_limiter.max_requests_per_second == 5.0
-        assert client.client.timeout.timeout == 10.0
+        assert client.client.timeout.connect == 10.0
 
     def test_client_initialization_default_config(self) -> None:
         """Test client initialization with default config."""

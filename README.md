@@ -70,22 +70,32 @@ pip install uv
 uv --version
 ```
 
-#### 4. Clone and setup the project
+#### 4. Install just (command runner)
+
+```bash
+# Install just command runner
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+
+# Add to PATH if needed
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# Verify installation
+just --version
+```
+
+#### 5. Clone and setup the project
 
 ```bash
 # Clone repository
 git clone https://github.com/danethurber/ponderous.git
 cd ponderous
 
-# Create and activate virtual environment with uv
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install all dependencies (including dev dependencies)
-uv sync --all-groups
+# Complete development environment setup
+just setup
 
 # Verify installation
-uv run python -c "import ponderous; print('✅ Ponderous installed successfully')"
+just ponderous --version
 ```
 
 > **Note**: If you encounter dependency resolution errors, you may have global uv configuration interfering with CodeArtifact or other private registries. This project requires PyPI-only dependencies.
@@ -144,55 +154,63 @@ Rank | Commander                  | Colors | Budget  | Archetype | Owned | Compl
 
 ## 🛠️ Development
 
-### Setup Development Environment
+### Common Development Tasks
 
-Follow the installation steps above, then:
+All development tasks use the `just` command runner for ergonomic argument passing:
 
 ```bash
-# Activate the virtual environment (if not already active)
-source .venv/bin/activate
+# Setup development environment (install dependencies and pre-commit hooks)
+just setup
 
-# Install pre-commit hooks
-uv run pre-commit install
+# Run the application
+just ponderous --help
+just ponderous sync-collection --username your_username --source moxfield
 
-# Verify development setup
-uv run pytest --version
-uv run black --version
-uv run ruff --version
+# Testing - supports all pytest arguments
+just test                                    # Run all tests with coverage
+just test -m unit                           # Unit tests only
+just test -m integration                    # Integration tests only
+just test -m e2e                           # End-to-end tests only
+just test -n auto                          # Run in parallel
+just test -v                               # Verbose output
+just test tests/unit/domain/test_card.py   # Specific test file
+just test -k "test_card"                   # Pattern matching
+
+# Code Quality - supports all tool arguments
+just lint                                   # Run all linting (ruff check + format)
+just lint --fix                           # Auto-fix linting issues
+just format                               # Format code (black + ruff format)
+just typecheck                            # Type checking (mypy)
+just typecheck src/specific/file.py       # Check specific file
+
+# Pre-commit and Security
+just pre-commit                           # Run all pre-commit hooks
+just security-scan                        # Run bandit security scan
+just security-scan --severity-level high  # High severity only
+
+# Project Management
+just clean                                # Clean build artifacts
+just build                                # Build package for distribution
+just install                              # Install package in development mode
+
+# View all available commands
+just --list
 ```
 
-### Running Tests
+### Development Workflow Examples
 
 ```bash
-# Run all tests with coverage (includes pytest-sugar for enhanced output)
-uv run --group test pytest
+# Quick development cycle
+just test -k "test_moxfield" -v            # Test specific functionality
+just lint --fix                           # Fix any style issues
+just typecheck                            # Verify types
+just pre-commit                           # Run all quality checks
 
-# Run specific test categories
-uv run --group test pytest -m unit          # Unit tests only
-uv run --group test pytest -m integration   # Integration tests only
-uv run --group test pytest -m e2e           # End-to-end tests only
-
-# Run tests in parallel
-uv run --group test pytest -n auto
-
-# Run with verbose output
-uv run --group test pytest -v
-```
-
-### Code Quality
-
-```bash
-# Format code
-uv run --group lint black src tests
-
-# Lint code
-uv run --group lint ruff check src tests
-
-# Type checking
-uv run --group lint mypy src
-
-# Run all quality checks
-uv run --group dev pre-commit run --all-files
+# Before committing
+just test                                  # Full test suite
+just lint                                 # Check formatting
+just typecheck                            # Type safety
+just security-scan                        # Security review
 ```
 
 ## 🏗️ Architecture
