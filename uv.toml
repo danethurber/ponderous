@@ -1,6 +1,0 @@
-# Project-specific uv configuration for Ponderous
-# Overrides global CodeArtifact config to use only PyPI
-
-index-url = "https://pypi.org/simple/"
-# Explicitly empty extra-index-url to override global config
-extra-index-url = []
