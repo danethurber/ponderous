@@ -114,8 +114,8 @@ uv add ponderous
 ### Basic Usage
 
 ```bash
-# Sync your collection from Moxfield
-ponderous sync-collection --username your_moxfield_username --source moxfield
+# Import your collection from CSV export
+ponderous import-collection --file moxfield_collection.csv --user-id your_username
 
 # Discover commanders you can build
 ponderous discover-commanders --user-id your_moxfield_username \
@@ -164,7 +164,7 @@ just setup
 
 # Run the application
 just ponderous --help
-just ponderous sync-collection --username your_username --source moxfield
+just ponderous import-collection --file collection.csv --user-id your_username
 
 # Testing - supports all pytest arguments
 just test                                    # Run all tests with coverage
@@ -224,7 +224,7 @@ src/ponderous/
 │   ├── services/     # Domain services (analysis algorithms)
 │   └── repositories/ # Abstract repository interfaces
 ├── infrastructure/   # External services and data access
-│   ├── moxfield/     # Moxfield API client
+│   ├── importers/    # CSV import functionality
 │   ├── edhrec/       # EDHREC scraper
 │   ├── database/     # DuckDB implementation
 │   └── etl/          # dlt pipelines

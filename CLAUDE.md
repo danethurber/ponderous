@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ponderous is a Python 3.11 CLI application that analyzes Magic: The Gathering collections to recommend buildable Commander decks. It follows clean architecture principles with domain-driven design.
 
-The application integrates with Moxfield (collection management) and EDHREC (deck statistics) to provide data-driven deck recommendations based on owned cards, budget constraints, and deck buildability scores.
+The application imports collections via CSV files (from Moxfield exports) and integrates with EDHREC (deck statistics) to provide data-driven deck recommendations based on owned cards, budget constraints, and deck buildability scores.
 
 ## Code Quality Standards
 

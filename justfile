@@ -97,6 +97,24 @@ ponderous *ARGS:
 run *ARGS:
     @UV_NO_CONFIG=1 uv run ponderous {{ARGS}}
 
+# === Convenience Commands for Testing New Features ===
+
+# Test card repository with search (handles quoted arguments properly)
+test-cards-search SEARCH_TERM *FLAGS='':
+    @UV_NO_CONFIG=1 uv run ponderous test-cards --search "{{SEARCH_TERM}}" {{FLAGS}}
+
+# Test basic card repository functionality
+test-cards-basic *FLAGS='':
+    @UV_NO_CONFIG=1 uv run ponderous test-cards {{FLAGS}}
+
+# Run EDHREC scraper in test mode
+test-edhrec-scraper LIMIT='10':
+    @UV_NO_CONFIG=1 uv run ponderous scrape-edhrec --limit {{LIMIT}} --test-mode
+
+# Get commander recommendations (requires user ID)
+test-recommendations USER_ID *FLAGS='':
+    @UV_NO_CONFIG=1 uv run ponderous recommend-commanders --user-id {{USER_ID}} {{FLAGS}}
+
 # === Composite Commands ===
 
 # Run all validation checks (lint, format-check, typecheck)

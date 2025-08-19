@@ -1,9 +1,9 @@
 """ETL (Extract, Transform, Load) pipelines for external data sources."""
 
 from .collection_transformer import normalize_collection_data
-from .moxfield_source import moxfield_collection_source
 
-__all__ = [
-    "moxfield_collection_source",
+# Removed moxfield_source import - API functionality deleted
+
+__all__: list[str] = [
     "normalize_collection_data",
 ]

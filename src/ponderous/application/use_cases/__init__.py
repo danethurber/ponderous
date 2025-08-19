@@ -1,13 +1,5 @@
 """Application use cases for business workflow orchestration."""
 
-from .sync_collection import (
-    SyncCollectionRequest,
-    SyncCollectionResponse,
-    SyncCollectionUseCase,
-)
+# All API sync use cases have been removed - only CSV import functionality remains
 
-__all__ = [
-    "SyncCollectionUseCase",
-    "SyncCollectionRequest",
-    "SyncCollectionResponse",
-]
+__all__: list[str] = []
