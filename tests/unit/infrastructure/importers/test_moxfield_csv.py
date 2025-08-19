@@ -4,12 +4,14 @@ from pathlib import Path
 
 import pytest
 
+from ponderous.infrastructure.database import DatabaseConnection
 from ponderous.infrastructure.importers import (
     ImportFileError,
     ImportRequest,
     ImportValidationError,
     MoxfieldCSVImporter,
 )
+from ponderous.shared.config import DatabaseConfig
 
 
 class TestMoxfieldCSVImporter:
@@ -17,8 +19,11 @@ class TestMoxfieldCSVImporter:
 
     @pytest.fixture
     def importer(self) -> MoxfieldCSVImporter:
-        """Create importer instance."""
-        return MoxfieldCSVImporter()
+        """Create importer instance with in-memory database."""
+        # Create in-memory database for testing
+        config = DatabaseConfig(memory=True, threads=1)
+        db_connection = DatabaseConnection(config)
+        return MoxfieldCSVImporter(db_connection)
 
     @pytest.fixture
     def fixtures_dir(self) -> Path:

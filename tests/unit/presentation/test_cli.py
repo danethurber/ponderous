@@ -590,26 +590,67 @@ class TestAnalyzeCollectionCommand:
         assert "testuser" in result.output
 
     @patch("ponderous.cli.get_config")
+    @patch("ponderous.cli.get_database_connection")
     def test_analyze_collection_with_flags(
-        self, mock_get_config: Mock, runner: CliRunner, mock_config: Mock
+        self,
+        mock_get_db: Mock,
+        mock_get_config: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
     ) -> None:
         """Test collection analysis with flags."""
         mock_get_config.return_value = mock_config
 
-        result = runner.invoke(
-            cli,
-            [
-                "analyze-collection",
-                "--user-id",
-                "testuser",
-                "--show-themes",
-                "--show-gaps",
-            ],
-        )
+        # Mock database connection and repository
+        mock_db = Mock()
+        mock_get_db.return_value = mock_db
 
-        assert result.exit_code == 0
-        assert "Theme Analysis" in result.output
-        assert "Collection Gaps" in result.output
+        # Mock repository with collection data
+        with patch("ponderous.cli.CollectionRepository") as mock_repo_class:
+            mock_repo = Mock()
+            mock_repo_class.return_value = mock_repo
+
+            # Mock collection summary with data
+            mock_repo.get_user_collection_summary.return_value = {
+                "user_id": "testuser",
+                "total_cards": 100,
+                "unique_cards": 85,
+                "sets_represented": 10,
+                "foil_cards": 15,
+                "last_import": "2023-01-01 12:00:00",
+                "conditions": {"Near Mint": {"entries": 50, "cards": 60}},
+                "languages": {"English": {"entries": 85, "cards": 100}},
+            }
+
+            # Mock collection entries
+            mock_repo.get_collection_by_user.return_value = [
+                {
+                    "card_name": "Lightning Bolt",
+                    "set_name": "Alpha",
+                    "quantity": 1,
+                    "condition": "Near Mint",
+                    "foil": False,
+                }
+            ]
+
+            # Mock import history
+            mock_repo.get_import_history.return_value = []
+
+            result = runner.invoke(
+                cli,
+                [
+                    "analyze-collection",
+                    "--user-id",
+                    "testuser",
+                    "--show-themes",
+                    "--show-gaps",
+                ],
+            )
+
+            assert result.exit_code == 0
+            assert "Theme Analysis" in result.output
+            assert "Collection Gaps" in result.output
+            assert "Collection Summary" in result.output
 
 
 class TestEDHRECCommands:

@@ -19,6 +19,10 @@ from rich.table import Table
 
 from ponderous import __version__
 from ponderous.application.services import CollectionService
+from ponderous.infrastructure.database import (
+    CollectionRepository,
+    get_database_connection,
+)
 from ponderous.infrastructure.importers import ImportRequest, MoxfieldCSVImporter
 from ponderous.shared.config import PonderousConfig, get_config
 from ponderous.shared.exceptions import PonderousError
@@ -758,13 +762,15 @@ def deck_details(
 @click.option(
     "--show-gaps", is_flag=True, help="Show collection gaps and recommendations"
 )
+@click.option("--limit", default=10, type=int, help="Maximum number of entries to show")
 @click.pass_context
 @handle_exception
 def analyze_collection(
     ctx: click.Context,  # noqa: ARG001
     user_id: str,
     show_themes: bool,
-    show_gaps: bool,  # noqa: ARG001
+    show_gaps: bool,
+    limit: int,
 ) -> None:
     """
     📊 Analyze collection strengths and provide strategic insights.
@@ -775,16 +781,130 @@ def analyze_collection(
     console.print("📊 [bold blue]Collection Analysis[/bold blue]")
     console.print(f"User: [cyan]{user_id}[/cyan]")
 
-    # TODO: Implement collection analysis
-    console.print("[yellow]⚠️  Collection analysis not yet implemented[/yellow]")
-    console.print(
-        "Coming soon: Deep insights into your collection strengths and opportunities"
-    )
+    # Get database connection and repository
+    db_connection = get_database_connection()
+    repository = CollectionRepository(db_connection)
 
-    if show_themes:
-        console.print("\n🎭 [bold]Theme Analysis:[/bold] Coming soon")
-    if show_gaps:
-        console.print("\n🕳️  [bold]Collection Gaps:[/bold] Coming soon")
+    try:
+        # Get collection summary
+        summary = repository.get_user_collection_summary(user_id)
+
+        if summary["total_cards"] == 0:
+            console.print(
+                f"\n[yellow]No collection data found for user {user_id}[/yellow]"
+            )
+            console.print(
+                "Use 'ponderous import-collection' to import your collection first."
+            )
+            return
+
+        # Display collection summary
+        console.print("\n📋 [bold]Collection Summary:[/bold]")
+
+        summary_table = Table(show_header=True, header_style="bold magenta")
+        summary_table.add_column("Metric", style="dim")
+        summary_table.add_column("Value", style="cyan")
+
+        summary_table.add_row("Total Cards", str(summary["total_cards"]))
+        summary_table.add_row("Unique Cards", str(summary["unique_cards"]))
+        summary_table.add_row("Sets Represented", str(summary["sets_represented"]))
+        summary_table.add_row("Foil Cards", str(summary["foil_cards"]))
+
+        if summary.get("last_import"):
+            summary_table.add_row("Last Import", str(summary["last_import"])[:19])
+
+        console.print(summary_table)
+
+        # Show condition breakdown if available
+        if summary.get("conditions") and summary["conditions"]:
+            console.print("\n🎯 [bold]Condition Breakdown:[/bold]")
+            condition_table = Table(show_header=True, header_style="bold green")
+            condition_table.add_column("Condition", style="dim")
+            condition_table.add_column("Entries", style="cyan")
+            condition_table.add_column("Total Cards", style="green")
+
+            for condition, data in summary["conditions"].items():
+                condition_table.add_row(
+                    condition or "Unknown", str(data["entries"]), str(data["cards"])
+                )
+            console.print(condition_table)
+
+        # Show language breakdown if multiple languages
+        if summary.get("languages") and len(summary["languages"]) > 1:
+            console.print("\n🌍 [bold]Language Breakdown:[/bold]")
+            language_table = Table(show_header=True, header_style="bold blue")
+            language_table.add_column("Language", style="dim")
+            language_table.add_column("Entries", style="cyan")
+            language_table.add_column("Total Cards", style="green")
+
+            for language, data in summary["languages"].items():
+                language_table.add_row(
+                    language, str(data["entries"]), str(data["cards"])
+                )
+            console.print(language_table)
+
+        # Show sample collection entries
+        console.print(f"\n🃏 [bold]Sample Collection (top {limit}):[/bold]")
+        collection_entries = repository.get_collection_by_user(user_id, limit=limit)
+
+        if collection_entries:
+            entries_table = Table(show_header=True, header_style="bold yellow")
+            entries_table.add_column("Card Name", style="cyan")
+            entries_table.add_column("Set", style="dim")
+            entries_table.add_column("Qty", justify="right", style="green")
+            entries_table.add_column("Condition", style="yellow")
+            entries_table.add_column("Foil", justify="center", style="magenta")
+
+            for entry in collection_entries:
+                entries_table.add_row(
+                    entry["card_name"],
+                    entry["set_name"],
+                    str(entry["quantity"]),
+                    entry["condition"] or "Unknown",
+                    "✨" if entry["foil"] else "—",
+                )
+            console.print(entries_table)
+
+        # Show import history
+        import_history = repository.get_import_history(user_id, limit=5)
+        if import_history:
+            console.print("\n📥 [bold]Recent Import History:[/bold]")
+            history_table = Table(show_header=True, header_style="bold purple")
+            history_table.add_column("Date", style="dim")
+            history_table.add_column("Format", style="cyan")
+            history_table.add_column("Processed", justify="right", style="green")
+            history_table.add_column("Imported", justify="right", style="blue")
+            history_table.add_column("Success Rate", justify="right", style="yellow")
+
+            for record in import_history:
+                history_table.add_row(
+                    str(record["created_at"])[:19],
+                    record["format"],
+                    str(record["items_processed"]),
+                    str(record["items_imported"]),
+                    f"{record['success_rate']:.1f}%",
+                )
+            console.print(history_table)
+
+        # Placeholder for future features
+        if show_themes:
+            console.print("\n🎭 [bold yellow]Theme Analysis:[/bold yellow] Coming soon")
+            console.print("   • Tribal synergies analysis")
+            console.print("   • Archetype compatibility scoring")
+            console.print("   • Color identity recommendations")
+
+        if show_gaps:
+            console.print(
+                "\n🕳️  [bold yellow]Collection Gaps:[/bold yellow] Coming soon"
+            )
+            console.print("   • Missing staples identification")
+            console.print("   • Budget upgrade suggestions")
+            console.print("   • Commander viability analysis")
+
+    except Exception as e:
+        console.print(f"[red]Error analyzing collection: {e}[/red]")
+    finally:
+        db_connection.close()
 
 
 @cli.command("update-edhrec")

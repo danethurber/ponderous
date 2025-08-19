@@ -191,3 +191,15 @@ class DatabaseConnection:
     ) -> None:
         """Context manager exit."""
         self.close()
+
+
+def get_database_connection(config: DatabaseConfig | None = None) -> DatabaseConnection:
+    """Get a database connection instance.
+
+    Args:
+        config: Database configuration. Uses global config if None.
+
+    Returns:
+        DatabaseConnection instance
+    """
+    return DatabaseConnection(config)
