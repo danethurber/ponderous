@@ -45,6 +45,9 @@ class CollectionService:
         if not username or not username.strip():
             raise PonderousError("Username cannot be empty")
 
+        if not self.validate_username_format(username.strip(), source):
+            raise PonderousError(f"Invalid username format for {source}: {username}")
+
         logger.info(f"Starting collection sync for user {username} from {source}")
 
         try:

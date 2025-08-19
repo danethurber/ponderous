@@ -8,14 +8,9 @@ from typing import Any
 import dlt
 from dlt.pipeline import Pipeline
 
-from ponderous.infrastructure.etl.collection_transformer import (
-    normalize_collection_data,
-    normalize_collection_metadata,
-)
 from ponderous.infrastructure.etl.moxfield_source import (
     moxfield_collection_source,
 )
-from ponderous.infrastructure.moxfield.exceptions import MoxfieldAPIError
 from ponderous.shared.config import get_config
 from ponderous.shared.exceptions import PonderousError
 
@@ -36,11 +31,14 @@ class SyncCollectionRequest:
         if not self.username or not self.username.strip():
             raise ValueError("Username cannot be empty")
 
-        if self.source.lower() not in ["moxfield"]:
-            raise ValueError(f"Unsupported source: {self.source}")
+        if not self.source or not self.source.strip():
+            raise ValueError("Source cannot be empty")
 
         self.username = self.username.strip()
-        self.source = self.source.lower()
+        self.source = self.source.strip().lower()
+
+        if self.source not in ["moxfield"]:
+            raise ValueError(f"Unsupported source: {self.source}")
 
 
 @dataclass
@@ -135,9 +133,8 @@ class SyncCollectionUseCase:
             response.error_type = type(e).__name__
             logger.error(f"Collection sync failed for {request.username}: {e}")
 
-            if not isinstance(e, MoxfieldAPIError | PonderousError):
-                raise PonderousError(f"Collection sync failed: {e}") from e
-            raise
+            # Don't re-raise, return the error response instead
+            # This allows the caller to handle the error gracefully
 
         finally:
             response.sync_completed_at = datetime.now()
@@ -154,7 +151,6 @@ class SyncCollectionUseCase:
         """Sync collection from Moxfield API using dlt pipeline."""
         logger.info(f"Starting Moxfield sync for {request.username}")
 
-        # Create dlt pipeline
         pipeline_name = f"moxfield_sync_{request.username}"
         pipeline = dlt.pipeline(
             pipeline_name=pipeline_name,
@@ -164,54 +160,75 @@ class SyncCollectionUseCase:
         )
 
         try:
-            # Prepare data sources
             collection_source = moxfield_collection_source(
-                request.username, config=None
+                request.username,
+                config=self.config.moxfield,
+                include_profile=request.include_profile,
             )
-
-            sources = [
-                normalize_collection_data,
-                normalize_collection_metadata,
-            ]
 
             if request.include_profile:
-                # Profile data will be included via collection source
                 logger.info("Profile data inclusion requested")
 
-            # Run the pipeline
             logger.info(f"Running dlt pipeline for {request.username}")
-            run_response = pipeline.run(
-                collection_source, *sources, table_name="collections"
-            )
+            run_response = pipeline.run(collection_source, table_name="collections")
 
-            # Store pipeline run information
             response.pipeline_run_id = getattr(
                 run_response, "pipeline_run_id", "unknown"
             )
 
-            # Extract metrics from pipeline run
-            # Use getattr to safely access dlt attributes that may not be typed
             try:
                 jobs = getattr(run_response, "jobs", [])
                 for job_info in jobs:
-                    completed_jobs = getattr(job_info, "completed_jobs", [])
-                    for job in completed_jobs:
-                        metrics = getattr(job, "metrics", {})
-                        for _table_name, table_metrics in metrics.items():
-                            if (
-                                isinstance(table_metrics, dict)
-                                and "items_count" in table_metrics
-                            ):
+                    failed_jobs = getattr(job_info, "failed_jobs", [])
+                    if failed_jobs:
+                        # Pipeline had failures, collect error information
+                        error_messages = []
+                        for failed_job in failed_jobs:
+                            exception = getattr(failed_job, "exception", None)
+                            if exception:
+                                error_messages.append(str(exception))
+
+                        error_msg = (
+                            "; ".join(error_messages)
+                            if error_messages
+                            else "Pipeline execution failed"
+                        )
+                        raise PonderousError(f"Pipeline failed: {error_msg}")
+            except PonderousError:
+                raise
+            except Exception as e:
+                logger.warning(f"Could not check pipeline failures: {e}")
+
+            try:
+                metrics = getattr(run_response, "metrics", None)
+                if metrics and isinstance(metrics, dict):
+                    for _table_name, table_metrics in metrics.items():
+                        if isinstance(table_metrics, dict):
+                            # Look for load metrics (items successfully loaded)
+                            if "items_count" in table_metrics:
                                 response.items_processed += table_metrics["items_count"]
                                 response.items_successful = response.items_processed
+                            elif "rows_count" in table_metrics:
+                                response.items_processed += table_metrics["rows_count"]
+                                response.items_successful = response.items_processed
+
+                # Fallback: extract from load_info if direct metrics aren't available
+                if response.items_processed == 0:
+                    load_info = getattr(run_response, "load_info", None)
+                    if load_info and hasattr(load_info, "tables"):
+                        tables = getattr(load_info, "tables", {})
+                        if isinstance(tables, dict):
+                            for _table_name, table_info in tables.items():
+                                rows_count = getattr(table_info, "rows_count", 0)
+                                if rows_count:
+                                    response.items_processed += rows_count
+                                    response.items_successful = response.items_processed
             except Exception as e:
                 logger.warning(f"Could not extract pipeline metrics: {e}")
 
-            # Get collection statistics from the pipeline
-            # Extract collection statistics
             try:
                 await self._extract_collection_stats(
-                    pipeline, request.username, response
+                    pipeline, request.username, response, request.include_profile
                 )
             except Exception as e:
                 logger.warning(f"Could not extract collection stats: {e}")
@@ -229,20 +246,17 @@ class SyncCollectionUseCase:
         pipeline: Pipeline,
         username: str,
         response: SyncCollectionResponse,
+        include_profile: bool,
     ) -> None:
         """Extract collection statistics from pipeline results."""
         try:
-            # Query the pipeline's destination to get stats
             with pipeline.sql_client() as client:
-                # Get collection metadata
+                # Get collection metadata from dlt collections table
                 result = client.execute_sql(
                     """
-                    SELECT total_cards, unique_cards
+                    SELECT COUNT(*) as unique_cards, SUM(total_quantity) as total_cards
                     FROM collections
-                    WHERE extraction_type = 'collection_metadata'
-                    AND user_id = ?
-                    ORDER BY extracted_at DESC
-                    LIMIT 1
+                    WHERE username = ?
                     """,
                     username,
                 )
@@ -250,14 +264,26 @@ class SyncCollectionUseCase:
                 if result:
                     row = result[0] if isinstance(result, list) else result
                     if hasattr(row, "get"):
-                        response.total_cards = row.get("total_cards", 0)
-                        response.unique_cards = row.get("unique_cards", 0)
+                        response.unique_cards = row.get("unique_cards", 0) or 0
+                        response.total_cards = row.get("total_cards", 0) or 0
                     else:
                         # Handle tuple or other row format
-                        response.total_cards = 0
-                        response.unique_cards = 0
+                        if isinstance(row, tuple | list) and len(row) >= 2:
+                            response.unique_cards = row[0] or 0
+                            response.total_cards = row[1] or 0
+                        else:
+                            response.total_cards = 0
+                            response.unique_cards = 0
+
+                    # Set items_processed to unique_cards + 1 (profile) if not already set
+                    if response.items_processed == 0:
+                        response.items_processed = response.unique_cards + (
+                            1 if include_profile else 0
+                        )
+                        response.items_successful = response.items_processed
+
                     logger.info(
-                        f"Extracted stats: {response.unique_cards} unique, {response.total_cards} total"
+                        f"Extracted stats: {response.unique_cards} unique, {response.total_cards} total, {response.items_processed} processed"
                     )
                 else:
                     logger.warning(f"No collection metadata found for {username}")
@@ -287,15 +313,15 @@ class SyncCollectionUseCase:
                 result = client.execute_sql(
                     """
                     SELECT
-                        user_id,
-                        source_id,
-                        total_cards,
-                        unique_cards,
-                        extracted_at,
-                        force_refresh
+                        username as user_id,
+                        'moxfield' as source_id,
+                        SUM(total_quantity) as total_cards,
+                        COUNT(*) as unique_cards,
+                        MAX(extracted_at) as extracted_at,
+                        FALSE as force_refresh
                     FROM collections
-                    WHERE extraction_type = 'collection_metadata'
-                    AND user_id = ?
+                    WHERE username = ?
+                    GROUP BY username
                     ORDER BY extracted_at DESC
                     LIMIT ?
                     """,

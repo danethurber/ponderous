@@ -108,13 +108,14 @@ async def moxfield_collection_items(
 
 @dlt.source(name="moxfield_collection")
 def moxfield_collection_source(
-    username: str, config: MoxfieldConfig | None = None
+    username: str, config: MoxfieldConfig | None = None, include_profile: bool = True
 ) -> list[Any]:
     """dlt source that combines user profile and collection data.
 
     Args:
         username: Moxfield username
         config: Optional Moxfield configuration
+        include_profile: Whether to include user profile data
 
     Returns:
         dlt source with user_profile and collection_items resources
@@ -122,32 +123,37 @@ def moxfield_collection_source(
     if not username or not username.strip():
         raise ValueError("Username cannot be empty")
 
-    # Create resources by wrapping the async functions
-    @dlt.resource(name="user_profile")
-    def user_profile() -> Any:
-        import asyncio
+    resources = []
 
-        async def _run_async() -> list[dict[str, Any]]:
-            items = []
-            async for item in moxfield_user_profile_source(username, config=config):
-                items.append(item)
-            return items
+    if include_profile:
 
-        # Handle both existing event loop and no event loop scenarios
-        try:
-            # Try to get existing event loop
-            asyncio.get_running_loop()
-            # If we're in an event loop, create a task and run it
-            import concurrent.futures
+        @dlt.resource(name="user_profile")
+        def user_profile() -> Any:
+            import asyncio
 
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, _run_async())
-                items = future.result()
-        except RuntimeError:
-            # No event loop running, safe to use asyncio.run()
-            items = asyncio.run(_run_async())
+            async def _run_async() -> list[dict[str, Any]]:
+                items = []
+                async for item in moxfield_user_profile_source(username, config=config):
+                    items.append(item)
+                return items
 
-        yield from items
+            # Handle both existing event loop and no event loop scenarios
+            try:
+                # Try to get existing event loop
+                asyncio.get_running_loop()
+                # If we're in an event loop, create a task and run it
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, _run_async())
+                    items = future.result()
+            except RuntimeError:
+                # No event loop running, safe to use asyncio.run()
+                items = asyncio.run(_run_async())
+
+            yield from items
+
+        resources.append(user_profile())
 
     @dlt.resource(name="collection_items")
     def collection_items() -> Any:
@@ -174,5 +180,5 @@ def moxfield_collection_source(
             items = asyncio.run(_run_async())
         yield from items
 
-    # Return the dlt resources
-    return [user_profile(), collection_items()]
+    resources.append(collection_items())
+    return resources

@@ -62,7 +62,6 @@ class MoxfieldClient:
         self.rate_limiter = RateLimiter(self.config.rate_limit)
         self.base_url = self.config.base_url.rstrip("/")
 
-        # Configure HTTP client
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(self.config.timeout),
             headers={
@@ -136,6 +135,9 @@ class MoxfieldClient:
 
             return response
 
+        except (httpx.ConnectError, httpx.TimeoutException):
+            # Let these bubble up for tenacity to retry
+            raise
         except httpx.HTTPError as e:
             logger.error(f"HTTP error for {url}: {e}")
             raise MoxfieldAPIError(f"Network error: {e}") from e
@@ -188,7 +190,6 @@ class MoxfieldClient:
         try:
             data = response.json()
 
-            # Process the collection data
             collection_data = {
                 "username": username,
                 "collection": data,

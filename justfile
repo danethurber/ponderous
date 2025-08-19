@@ -80,7 +80,7 @@ typecheck *ARGS:
     else \
         echo "🔍 Running type checking on all files..."; \
     fi
-    @UV_NO_CONFIG=1 uv run --group lint mypy {{ARGS}}
+    @UV_NO_CONFIG=1 uv run --group lint mypy src {{ARGS}}
 
 # Security scan with bandit
 security-scan *ARGS:

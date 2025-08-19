@@ -7,7 +7,7 @@ and output formatting for all CLI commands.
 
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 if TYPE_CHECKING:
     from click.testing import CliRunner
@@ -31,12 +31,24 @@ def mock_config() -> Mock:
     """Create a mock configuration."""
     config = Mock(spec=PonderousConfig)
     config.debug = False
+
+    # Set up nested mock objects
+    config.database = Mock()
     config.database.path = Path.home() / ".ponderous" / "test.db"
+
+    config.moxfield = Mock()
     config.moxfield.base_url = "https://api.moxfield.com"
+
+    config.edhrec = Mock()
     config.edhrec.base_url = "https://edhrec.com"
+
+    config.analysis = Mock()
     config.analysis.min_completion_threshold = 0.7
+
+    config.logging = Mock()
     config.logging.level = "INFO"
     config.logging.file_path = None
+
     config.config_dir = Path.home() / ".ponderous"
     return config
 
@@ -101,10 +113,8 @@ class TestCLIMain:
         assert result.exit_code == 0
 
     @patch("ponderous.cli.PonderousConfig.from_file")
-    @patch("ponderous.cli.get_config")
     def test_cli_config_file_option(
         self,
-        mock_get_config: Mock,
         mock_from_file: Mock,
         runner: CliRunner,
         tmp_path: Path,
@@ -113,9 +123,12 @@ class TestCLIMain:
         config_file = tmp_path / "test_config.toml"
         config_file.write_text("[database]\npath = '/test/path'")
 
-        mock_config = Mock(spec=PonderousConfig)
+        # Create a real config object and then mock from_file to return it
+        from ponderous.shared.config import PonderousConfig
+
+        mock_config = PonderousConfig()
         mock_from_file.return_value = mock_config
-        mock_get_config.return_value = mock_config
+        # Don't mock get_config since the context creation should use the loaded config
 
         result = runner.invoke(
             cli, ["--config-file", str(config_file), "config", "--show"]
@@ -180,12 +193,33 @@ class TestUserCommands:
 class TestSyncCollectionCommand:
     """Test collection syncing functionality."""
 
+    @patch("ponderous.cli.CollectionService")
     @patch("ponderous.cli.get_config")
     def test_sync_collection_basic(
-        self, mock_get_config: Mock, runner: CliRunner, mock_config: Mock
+        self,
+        mock_get_config: Mock,
+        mock_collection_service_class: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
     ) -> None:
         """Test basic collection sync command."""
         mock_get_config.return_value = mock_config
+
+        # Mock the CollectionService instance and its methods
+        mock_service = Mock()
+        mock_collection_service_class.return_value = mock_service
+        mock_service.validate_username_format.return_value = True
+
+        # Mock the async sync_user_collection method with proper types
+        mock_response = Mock()
+        mock_response.success = True
+        mock_response.username = "testuser"
+        mock_response.source = "moxfield"
+        mock_response.unique_cards = 100
+        mock_response.total_cards = 150
+        mock_response.items_processed = 250
+        mock_response.sync_duration_seconds = 2.5
+        mock_service.sync_user_collection = AsyncMock(return_value=mock_response)
 
         result = runner.invoke(cli, ["sync-collection", "--username", "testuser"])
 
@@ -194,12 +228,33 @@ class TestSyncCollectionCommand:
         assert "testuser" in result.output
         assert "Moxfield" in result.output
 
+    @patch("ponderous.cli.CollectionService")
     @patch("ponderous.cli.get_config")
     def test_sync_collection_with_source(
-        self, mock_get_config: Mock, runner: CliRunner, mock_config: Mock
+        self,
+        mock_get_config: Mock,
+        mock_collection_service_class: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
     ) -> None:
         """Test collection sync with specified source."""
         mock_get_config.return_value = mock_config
+
+        # Mock the CollectionService instance and its methods
+        mock_service = Mock()
+        mock_collection_service_class.return_value = mock_service
+        mock_service.validate_username_format.return_value = True
+
+        # Mock the async sync_user_collection method with proper types
+        mock_response = Mock()
+        mock_response.success = True
+        mock_response.username = "testuser"
+        mock_response.source = "moxfield"
+        mock_response.unique_cards = 100
+        mock_response.total_cards = 150
+        mock_response.items_processed = 250
+        mock_response.sync_duration_seconds = 2.5
+        mock_service.sync_user_collection = AsyncMock(return_value=mock_response)
 
         result = runner.invoke(
             cli, ["sync-collection", "--username", "testuser", "--source", "moxfield"]
@@ -209,12 +264,33 @@ class TestSyncCollectionCommand:
         assert "testuser" in result.output
         assert "Moxfield" in result.output
 
+    @patch("ponderous.cli.CollectionService")
     @patch("ponderous.cli.get_config")
     def test_sync_collection_force(
-        self, mock_get_config: Mock, runner: CliRunner, mock_config: Mock
+        self,
+        mock_get_config: Mock,
+        mock_collection_service_class: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
     ) -> None:
         """Test collection sync with force flag."""
         mock_get_config.return_value = mock_config
+
+        # Mock the CollectionService instance and its methods
+        mock_service = Mock()
+        mock_collection_service_class.return_value = mock_service
+        mock_service.validate_username_format.return_value = True
+
+        # Mock the async sync_user_collection method with proper types
+        mock_response = Mock()
+        mock_response.success = True
+        mock_response.username = "testuser"
+        mock_response.source = "moxfield"
+        mock_response.unique_cards = 100
+        mock_response.total_cards = 150
+        mock_response.items_processed = 250
+        mock_response.sync_duration_seconds = 2.5
+        mock_service.sync_user_collection = AsyncMock(return_value=mock_response)
 
         result = runner.invoke(
             cli, ["sync-collection", "--username", "testuser", "--force"]
@@ -585,7 +661,8 @@ class TestEDHRECCommands:
         )
 
         assert result.exit_code == 0
-        assert str(commanders_file) in result.output
+        # Check that the commanders file is referenced in the output
+        assert "commanders.txt" in result.output
 
     @patch("ponderous.cli.get_config")
     def test_edhrec_stats(

@@ -22,8 +22,8 @@ from ponderous.application.services import CollectionService
 from ponderous.shared.config import PonderousConfig, get_config
 from ponderous.shared.exceptions import PonderousError
 
-# Initialize Rich console for beautiful output
-console = Console()
+# Use unlimited width to prevent path truncation in tests
+console = Console(width=None)
 
 
 class PonderousContext:
@@ -35,14 +35,12 @@ class PonderousContext:
         self.verbose = False
 
 
-# Define CLI context settings
 CONTEXT_SETTINGS = {
     "help_option_names": ["-h", "--help"],
     "max_content_width": 120,
 }
 
 
-# Type variable for decorator
 F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -99,12 +97,10 @@ def cli(
         ponderous discover-commanders --user-id myuser --colors BG --budget-max 300
         ponderous recommend-decks "Meren of Clan Nel Toth" --user-id myuser
     """
-    # Create context object
     ctx.ensure_object(PonderousContext)
     ctx.obj.debug = debug or ctx.obj.debug
     ctx.obj.verbose = verbose
 
-    # Load configuration from file if provided
     if config_file:
         try:
             ctx.obj.config = PonderousConfig.from_file(config_file)
@@ -116,7 +112,6 @@ def cli(
             console.print(f"[red]✗[/red] Failed to load config file: {e}")
             sys.exit(1)
 
-    # If no command was invoked, show help
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
@@ -189,7 +184,6 @@ def sync_collection(
     if force:
         console.print("[yellow]Force sync enabled - ignoring cache[/yellow]")
 
-    # Real implementation using collection service
     async def _run_sync() -> None:
         """Run the async sync operation."""
         collection_service = CollectionService()
@@ -434,7 +428,7 @@ def discover_quick(
     """
     console.print("⚡ [bold blue]Quick Commander Discovery[/bold blue]")
     console.print(f"User: [cyan]{user_id}[/cyan]")
-    console.print(f"Budget: [green]{budget_bracket or 'Any'}[/green]")
+    console.print(f"Budget: [green]{(budget_bracket or 'Any').title()}[/green]")
     console.print(f"Min Completion: [yellow]{min_completion:.1%}[/yellow]")
 
     # TODO: Implement quick discovery logic
@@ -628,7 +622,8 @@ def update_edhrec(
     console.print("🔄 [bold blue]Updating EDHREC Data[/bold blue]")
 
     if commanders_file:
-        console.print(f"Source: [cyan]{commanders_file}[/cyan]")
+        # Use click.echo for long paths to avoid Rich truncation in tests
+        click.echo(f"Source: {commanders_file}")
     elif popular_only:
         console.print("Source: [cyan]Popular commanders only[/cyan]")
 
