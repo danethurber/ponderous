@@ -849,6 +849,259 @@ class TestPonderousContext:
             assert context.verbose is False
 
 
+class TestImportCollectionCommand:
+    """Test collection import functionality."""
+
+    @patch("ponderous.cli.get_config")
+    @patch("ponderous.cli.MoxfieldCSVImporter")
+    def test_import_collection_validation_only(
+        self,
+        mock_importer_class: Mock,
+        mock_get_config: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test collection import validation mode."""
+        mock_get_config.return_value = mock_config
+
+        # Create a test CSV file
+        test_csv = tmp_path / "test.csv"
+        test_csv.write_text("Count,Name,Edition\n1,Lightning Bolt,Unlimited\n")
+
+        # Mock importer instance and response
+        mock_importer = Mock()
+        mock_importer_class.return_value = mock_importer
+        mock_importer.supports_format.return_value = True
+
+        mock_response = Mock()
+        mock_response.success = True
+        mock_response.items_processed = 1
+        mock_response.items_imported = 0
+        mock_response.items_skipped = 0
+        mock_response.validation_only = True
+        mock_response.processing_time_seconds = 0.01
+        mock_response.has_errors = False
+        mock_response.has_warnings = False
+        mock_importer.import_collection = AsyncMock(return_value=mock_response)
+
+        result = runner.invoke(
+            cli,
+            [
+                "import-collection",
+                "--file",
+                str(test_csv),
+                "--user-id",
+                "test_user",
+                "--validate-only",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert "File validation completed!" in result.output
+        assert "1 items processed" in result.output
+        assert "Validation Summary:" in result.output
+
+    @patch("ponderous.cli.get_config")
+    @patch("ponderous.cli.MoxfieldCSVImporter")
+    def test_import_collection_full_import(
+        self,
+        mock_importer_class: Mock,
+        mock_get_config: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test full collection import."""
+        mock_get_config.return_value = mock_config
+
+        # Create a test CSV file
+        test_csv = tmp_path / "test.csv"
+        test_csv.write_text("Count,Name,Edition\n2,Sol Ring,Commander 2021\n")
+
+        # Mock importer instance and response
+        mock_importer = Mock()
+        mock_importer_class.return_value = mock_importer
+        mock_importer.supports_format.return_value = True
+
+        mock_response = Mock()
+        mock_response.success = True
+        mock_response.items_processed = 1
+        mock_response.items_imported = 1
+        mock_response.items_skipped = 0
+        mock_response.validation_only = False
+        mock_response.processing_time_seconds = 0.05
+        mock_response.has_errors = False
+        mock_response.has_warnings = False
+        mock_response.success_rate = 100.0
+        mock_importer.import_collection = AsyncMock(return_value=mock_response)
+
+        result = runner.invoke(
+            cli,
+            ["import-collection", "--file", str(test_csv), "--user-id", "test_user"],
+        )
+
+        assert result.exit_code == 0
+        assert "Collection import completed!" in result.output
+        assert "1 items processed" in result.output
+        assert "1 items imported" in result.output
+        assert "100.0%" in result.output
+        assert "Import Summary:" in result.output
+
+    @patch("ponderous.cli.get_config")
+    @patch("ponderous.cli.MoxfieldCSVImporter")
+    def test_import_collection_with_errors(
+        self,
+        mock_importer_class: Mock,
+        mock_get_config: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test collection import with errors."""
+        mock_get_config.return_value = mock_config
+
+        # Create a test CSV file
+        test_csv = tmp_path / "bad.csv"
+        test_csv.write_text("Count,Name\n0,Invalid Card\n")
+
+        # Mock importer instance and response
+        mock_importer = Mock()
+        mock_importer_class.return_value = mock_importer
+        mock_importer.supports_format.return_value = True
+
+        mock_response = Mock()
+        mock_response.success = False
+        mock_response.items_processed = 0
+        mock_response.items_imported = 0
+        mock_response.items_skipped = 0
+        mock_response.validation_only = False
+        mock_response.processing_time_seconds = 0.01
+        mock_response.has_errors = True
+        mock_response.has_warnings = False
+        mock_response.errors = ["Missing required column: Edition"]
+        mock_importer.import_collection = AsyncMock(return_value=mock_response)
+
+        result = runner.invoke(
+            cli,
+            ["import-collection", "--file", str(test_csv), "--user-id", "test_user"],
+        )
+
+        assert result.exit_code == 1
+        assert "Collection import failed!" in result.output
+        assert "Missing required column: Edition" in result.output
+
+    @patch("ponderous.cli.get_config")
+    def test_import_collection_missing_file(
+        self, mock_get_config: Mock, runner: CliRunner, mock_config: Mock
+    ) -> None:
+        """Test import with missing file."""
+        mock_get_config.return_value = mock_config
+
+        result = runner.invoke(
+            cli,
+            [
+                "import-collection",
+                "--file",
+                "nonexistent.csv",
+                "--user-id",
+                "test_user",
+            ],
+        )
+
+        assert result.exit_code == 2  # Click error for invalid path
+
+    @patch("ponderous.cli.get_config")
+    def test_import_collection_missing_required_arguments(
+        self, mock_get_config: Mock, runner: CliRunner, mock_config: Mock
+    ) -> None:
+        """Test import with missing required arguments."""
+        mock_get_config.return_value = mock_config
+
+        # Missing file
+        result = runner.invoke(cli, ["import-collection", "--user-id", "test_user"])
+        assert result.exit_code == 2
+
+        # Missing user-id
+        result = runner.invoke(cli, ["import-collection", "--file", "test.csv"])
+        assert result.exit_code == 2
+
+    @patch("ponderous.cli.get_config")
+    @patch("ponderous.cli.MoxfieldCSVImporter")
+    def test_import_collection_unsupported_format(
+        self,
+        mock_importer_class: Mock,
+        mock_get_config: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test import with unsupported file format."""
+        mock_get_config.return_value = mock_config
+
+        # Create a test file with wrong extension
+        test_file = tmp_path / "test.txt"
+        test_file.write_text("some content")
+
+        # Mock importer to return False for format support
+        mock_importer = Mock()
+        mock_importer_class.return_value = mock_importer
+        mock_importer.supports_format.return_value = False
+
+        result = runner.invoke(
+            cli,
+            ["import-collection", "--file", str(test_file), "--user-id", "test_user"],
+        )
+
+        assert result.exit_code == 1
+        assert "File format not supported" in result.output
+
+    @patch("ponderous.cli.get_config")
+    @patch("ponderous.cli.MoxfieldCSVImporter")
+    def test_import_collection_with_warnings(
+        self,
+        mock_importer_class: Mock,
+        mock_get_config: Mock,
+        runner: CliRunner,
+        mock_config: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test collection import with warnings."""
+        mock_get_config.return_value = mock_config
+
+        # Create a test CSV file
+        test_csv = tmp_path / "test.csv"
+        test_csv.write_text("Count,Name,Edition\n1,Test Card,Test Set\n")
+
+        # Mock importer instance and response
+        mock_importer = Mock()
+        mock_importer_class.return_value = mock_importer
+        mock_importer.supports_format.return_value = True
+
+        mock_response = Mock()
+        mock_response.success = True
+        mock_response.items_processed = 1
+        mock_response.items_imported = 1
+        mock_response.items_skipped = 0
+        mock_response.validation_only = False
+        mock_response.processing_time_seconds = 0.01
+        mock_response.has_errors = False
+        mock_response.has_warnings = True
+        mock_response.warnings = ["Unknown set: Test Set"]
+        mock_response.success_rate = 100.0
+        mock_importer.import_collection = AsyncMock(return_value=mock_response)
+
+        result = runner.invoke(
+            cli,
+            ["import-collection", "--file", str(test_csv), "--user-id", "test_user"],
+        )
+
+        assert result.exit_code == 0
+        assert "Collection import completed!" in result.output
+        assert "Warnings:" in result.output
+        assert "Unknown set: Test Set" in result.output
+
+
 class TestMainFunction:
     """Test the main entry point function."""
 

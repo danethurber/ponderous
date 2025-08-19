@@ -28,7 +28,10 @@
       "Bash(gh run list:*)",
       "Bash(UV_NO_CONFIG=1 uv run --group dev pre-commit run bandit --all-files)",
       "Bash(make:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:gist.github.com)"
     ],
     "deny": [],
     "ask": [],

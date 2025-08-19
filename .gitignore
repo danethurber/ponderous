@@ -136,6 +136,7 @@ ponderous.db
 *.duckdb
 .ponderous/
 bandit-report.json
+data/
 
 # IDE
 .vscode/settings.json

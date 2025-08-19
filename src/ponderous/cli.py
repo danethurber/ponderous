@@ -19,6 +19,7 @@ from rich.table import Table
 
 from ponderous import __version__
 from ponderous.application.services import CollectionService
+from ponderous.infrastructure.importers import ImportRequest, MoxfieldCSVImporter
 from ponderous.shared.config import PonderousConfig, get_config
 from ponderous.shared.exceptions import PonderousError
 
@@ -272,6 +273,195 @@ def sync_collection(
         asyncio.run(_run_sync())
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠️  Sync cancelled by user[/yellow]")
+        sys.exit(1)
+
+
+@cli.command("import-collection")
+@click.option(
+    "--file",
+    "file_path",
+    required=True,
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to collection file (CSV format)",
+)
+@click.option("--user-id", required=True, help="User identifier for this collection")
+@click.option(
+    "--format",
+    "import_format",
+    default="moxfield_csv",
+    type=click.Choice(["moxfield_csv"], case_sensitive=False),
+    help="Import file format",
+)
+@click.option(
+    "--validate-only",
+    is_flag=True,
+    help="Validate file format without importing data",
+)
+@click.option(
+    "--skip-duplicates",
+    is_flag=True,
+    default=True,
+    help="Skip duplicate entries (default: enabled)",
+)
+@click.pass_context
+@handle_exception
+def import_collection(
+    ctx: click.Context,  # noqa: ARG001
+    file_path: Path,
+    user_id: str,
+    import_format: str,
+    validate_only: bool,
+    skip_duplicates: bool,
+) -> None:
+    """
+    📂 Import your card collection from a file.
+
+    Import collection data from exported files (CSV format) to enable deck
+    recommendations. Currently supports Moxfield CSV exports.
+
+    Examples:
+        ponderous import-collection --file my_collection.csv --user-id myuser
+        ponderous import-collection --file collection.csv --user-id myuser --validate-only
+    """
+    console.print("📂 [bold blue]Importing Collection[/bold blue]")
+    console.print(f"File: [cyan]{file_path}[/cyan]")
+    console.print(f"User ID: [cyan]{user_id}[/cyan]")
+    console.print(f"Format: [cyan]{import_format.title()}[/cyan]")
+
+    if validate_only:
+        console.print("[yellow]Validation mode - no data will be imported[/yellow]")
+
+    async def _run_import() -> None:
+        """Run the async import operation."""
+        # Create appropriate importer based on format
+        if import_format.lower() == "moxfield_csv":
+            importer = MoxfieldCSVImporter()
+        else:
+            raise PonderousError(f"Unsupported import format: {import_format}")
+
+        # Verify file format is supported
+        if not importer.supports_format(file_path):
+            raise PonderousError(
+                f"File format not supported by {import_format} importer: {file_path.suffix}"
+            )
+
+        try:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+            ) as progress:
+                task = progress.add_task("Validating file format...", total=None)
+
+                # Create import request
+                request = ImportRequest(
+                    file_path=file_path,
+                    user_id=user_id,
+                    source=f"{import_format}_import",
+                    validate_only=validate_only,
+                    skip_duplicates=skip_duplicates,
+                )
+
+                progress.update(task, description="Reading and parsing file...")
+
+                # Perform the import
+                response = await importer.import_collection(request)
+
+                if validate_only:
+                    progress.update(task, description="✅ File validation completed")
+                else:
+                    progress.update(
+                        task, description="✅ Import completed successfully"
+                    )
+
+                if response.success:
+                    # Display success summary
+                    console.print()
+                    if validate_only:
+                        console.print(
+                            "🎉 [bold green]File validation completed![/bold green]"
+                        )
+                    else:
+                        console.print(
+                            "🎉 [bold green]Collection import completed![/bold green]"
+                        )
+
+                    console.print(f"📊 {response.items_processed} items processed")
+
+                    if not validate_only:
+                        console.print(f"📥 {response.items_imported} items imported")
+
+                    if response.processing_time_seconds:
+                        console.print(
+                            f"⏱️  Completed in {response.processing_time_seconds:.2f} seconds"
+                        )
+
+                    # Show import summary table
+                    summary_table = Table(show_header=True, header_style="bold magenta")
+                    summary_table.add_column("Metric", style="dim")
+                    summary_table.add_column("Value", style="cyan")
+
+                    summary_table.add_row("File", str(file_path.name))
+                    summary_table.add_row("Format", import_format.title())
+                    summary_table.add_row("User ID", user_id)
+                    summary_table.add_row(
+                        "Items Processed", str(response.items_processed)
+                    )
+
+                    if not validate_only:
+                        summary_table.add_row(
+                            "Items Imported", str(response.items_imported)
+                        )
+                        summary_table.add_row(
+                            "Items Skipped", str(response.items_skipped)
+                        )
+                        summary_table.add_row(
+                            "Success Rate", f"{response.success_rate:.1f}%"
+                        )
+
+                    if response.processing_time_seconds:
+                        summary_table.add_row(
+                            "Processing Time",
+                            f"{response.processing_time_seconds:.2f}s",
+                        )
+
+                    console.print(
+                        f"\n📋 [bold]{'Validation' if validate_only else 'Import'} Summary:[/bold]"
+                    )
+                    console.print(summary_table)
+
+                    # Show warnings if any
+                    if response.has_warnings:
+                        console.print("\n⚠️  [bold yellow]Warnings:[/bold yellow]")
+                        for warning in response.warnings:
+                            console.print(f"   • {warning}")
+
+                else:
+                    progress.update(task, description="❌ Import failed")
+                    console.print()
+                    console.print("[bold red]❌ Collection import failed![/bold red]")
+
+                    # Show errors
+                    if response.has_errors:
+                        console.print("\n💥 [bold red]Errors:[/bold red]")
+                        for error in response.errors:
+                            console.print(f"   • {error}")
+
+                    raise PonderousError("Collection import failed")
+
+        except Exception as e:
+            if not isinstance(e, PonderousError):
+                console.print(
+                    f"\n[bold red]❌ Unexpected error during import:[/bold red] {e}"
+                )
+                raise PonderousError(f"Collection import failed: {e}") from e
+            raise
+
+    # Run the async import operation
+    try:
+        asyncio.run(_run_import())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]⚠️  Import cancelled by user[/yellow]")
         sys.exit(1)
 
 

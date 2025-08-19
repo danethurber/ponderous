@@ -3,14 +3,16 @@
 ## Document Overview
 
 **Project:** Ponderous
-**Version:** 1.1
+**Version:** 1.2
 **Created:** August 2025
 **Document Owner:** Product Development Team
-**Last Updated:** August 18, 2025
+**Last Updated:** August 19, 2025
 
 **Change History:**
-- v1.0 - Initial PRD creation with TDD and clean code requirements
-- v1.1 - Updated with Phase 1 CLI implementation completion
+
+-   v1.0 - Initial PRD creation with TDD and clean code requirements
+-   v1.1 - Updated with Phase 1 CLI implementation completion
+-   v1.2 - Updated data source strategy from API to file-based collection import due to Moxfield API access restrictions
 
 ---
 
@@ -19,10 +21,11 @@
 **Ponderous** is a command-line application that analyzes Magic: The Gathering card collections against EDHREC deck statistics to recommend buildable Commander decks. Named to evoke thoughtful, deliberate analysis—the kind of careful consideration that goes into both the MTG card "Ponder" and serious deck construction—Ponderous helps MTG players optimize their existing collections by identifying which decks they can build with minimal additional investment.
 
 ### Key Success Metrics
-- **Primary KPI**: 90%+ accuracy in deck buildability calculations
-- **User Experience**: Sub-30 second analysis time for full collection
-- **Code Quality**: 95%+ test coverage with clean code practices
-- **Extensibility**: Support for multiple collection sources (Moxfield → Archidekt)
+
+-   **Primary KPI**: 90%+ accuracy in deck buildability calculations
+-   **User Experience**: Sub-30 second analysis time for full collection
+-   **Code Quality**: 95%+ test coverage with clean code practices
+-   **Extensibility**: Support for multiple collection sources (Moxfield → Archidekt)
 
 ## 🚀 Implementation Progress Summary
 
@@ -31,86 +34,98 @@
 ### ✅ **Completed Components** (August 18, 2025)
 
 #### CLI Interface (100% Complete)
-- ✅ **Full Click Framework Integration**: Professional CLI with commands, options, and arguments
-- ✅ **Rich Terminal Output**: Beautiful formatting with tables, panels, and progress indicators
-- ✅ **Configuration System**: Complete config management with file support and environment variables
-- ✅ **Error Handling**: Robust exception handling with debug modes
-- ✅ **Command Structure**: All PRD-required commands implemented:
-  - `ponderous sync-collection` - Collection syncing interface
-  - `ponderous discover-commanders` - Full commander discovery with advanced filtering
-  - `ponderous discover` - Quick commander discovery
-  - `ponderous recommend-decks` - Deck recommendations for commanders
-  - `ponderous analyze-collection` - Collection analysis and insights
-  - `ponderous config` - Configuration management
-  - `ponderous user` - User management commands
-  - `ponderous update-edhrec` - EDHREC data management
+
+-   ✅ **Full Click Framework Integration**: Professional CLI with commands, options, and arguments
+-   ✅ **Rich Terminal Output**: Beautiful formatting with tables, panels, and progress indicators
+-   ✅ **Configuration System**: Complete config management with file support and environment variables
+-   ✅ **Error Handling**: Robust exception handling with debug modes
+-   ✅ **Command Structure**: All PRD-required commands implemented:
+    -   `ponderous sync-collection` - Collection syncing interface
+    -   `ponderous discover-commanders` - Full commander discovery with advanced filtering
+    -   `ponderous discover` - Quick commander discovery
+    -   `ponderous recommend-decks` - Deck recommendations for commanders
+    -   `ponderous analyze-collection` - Collection analysis and insights
+    -   `ponderous config` - Configuration management
+    -   `ponderous user` - User management commands
+    -   `ponderous update-edhrec` - EDHREC data management
 
 #### Foundation Architecture (100% Complete)
-- ✅ **Clean Architecture**: Domain/Infrastructure/Application/Presentation layers established
-- ✅ **Domain Models**: Card, Collection, Commander, Deck, User entities with business logic
-- ✅ **Database Layer**: DuckDB connection management and migration system
-- ✅ **Configuration Management**: Comprehensive config system with validation
-- ✅ **Exception Handling**: Custom exception hierarchy
-- ✅ **Testing Infrastructure**: pytest setup with coverage reporting
+
+-   ✅ **Clean Architecture**: Domain/Infrastructure/Application/Presentation layers established
+-   ✅ **Domain Models**: Card, Collection, Commander, Deck, User entities with business logic
+-   ✅ **Database Layer**: DuckDB connection management and migration system
+-   ✅ **Configuration Management**: Comprehensive config system with validation
+-   ✅ **Exception Handling**: Custom exception hierarchy
+-   ✅ **Testing Infrastructure**: pytest setup with coverage reporting
 
 #### Code Quality Standards (100% Met)
-- ✅ **Type Safety**: Full MyPy compliance with proper type annotations
-- ✅ **Code Quality**: Ruff linting passed, Black formatting applied
-- ✅ **Test Coverage**: Domain and infrastructure tests at 100% coverage
-- ✅ **Documentation**: Comprehensive docstrings and help text
-- ✅ **Quality Gates**: Pre-commit hooks and automated quality checks
+
+-   ✅ **Type Safety**: Full MyPy compliance with proper type annotations
+-   ✅ **Code Quality**: Ruff linting passed, Black formatting applied
+-   ✅ **Test Coverage**: Domain and infrastructure tests at 100% coverage
+-   ✅ **Documentation**: Comprehensive docstrings and help text
+-   ✅ **Quality Gates**: Pre-commit hooks and automated quality checks
 
 ### 🔄 **In Progress Components**
 
 #### CLI Test Suite (85% Complete)
-- ✅ Core CLI functionality tests passing
-- ❌ Complex integration tests need fixture improvements
-- **Status**: CLI functionality fully working, test infrastructure needs refinement
+
+-   ✅ Core CLI functionality tests passing
+-   ❌ Complex integration tests need fixture improvements
+-   **Status**: CLI functionality fully working, test infrastructure needs refinement
 
 ### 📋 **Next Priority Components** (Phase 1 Continuation)
 
-#### External API Integrations (Not Started)
-- **Moxfield API Client**: Collection data synchronization
-- **EDHREC Web Scraper**: Commander statistics and deck data
-- **ETL Pipeline**: Data transformation and loading with dlt
+#### Collection Import System (Not Started)
+
+-   **Moxfield CSV Import**: Collection data via file upload (primary method)
+-   **Multi-Platform File Support**: CSV/JSON import from various platforms
+-   **EDHREC Web Scraper**: Commander statistics and deck data
+-   **ETL Pipeline**: Data transformation and loading with dlt
 
 #### Analysis Engine (Not Started)
-- **Deck Analysis Algorithms**: Buildability scoring and recommendation logic
-- **Commander Discovery**: Collection-based commander recommendations
-- **Missing Card Analysis**: Impact-based card prioritization
+
+-   **Deck Analysis Algorithms**: Buildability scoring and recommendation logic
+-   **Commander Discovery**: Collection-based commander recommendations
+-   **Missing Card Analysis**: Impact-based card prioritization
 
 #### Application Layer (Not Started)
-- **Use Cases**: Business workflow orchestration
-- **Services**: Application-level coordination
+
+-   **Use Cases**: Business workflow orchestration
+-   **Services**: Application-level coordination
 
 ### 📊 **Updated Success Metrics**
 
-| Metric | Target | Current Status | Notes |
-|--------|---------|----------------|-------|
-| **Code Quality** | 95%+ test coverage | Domain/Infrastructure: 100%, CLI: 85% | CLI tests need fixture improvements |
-| **Type Safety** | Full MyPy compliance | ✅ 100% | All modules type-safe |
-| **CLI Usability** | Intuitive interface | ✅ 100% | Professional CLI with rich formatting |
-| **Architecture** | Clean architecture | ✅ 100% | Proper layer separation implemented |
+| Metric            | Target               | Current Status                        | Notes                                 |
+| ----------------- | -------------------- | ------------------------------------- | ------------------------------------- |
+| **Code Quality**  | 95%+ test coverage   | Domain/Infrastructure: 100%, CLI: 85% | CLI tests need fixture improvements   |
+| **Type Safety**   | Full MyPy compliance | ✅ 100%                               | All modules type-safe                 |
+| **CLI Usability** | Intuitive interface  | ✅ 100%                               | Professional CLI with rich formatting |
+| **Architecture**  | Clean architecture   | ✅ 100%                               | Proper layer separation implemented   |
 
 ---
 
 ## Product Vision & Goals
 
 ### Problem Statement
+
 MTG players struggle to identify which Commander decks they can build from their existing collections, leading to:
-- Redundant card purchases
-- Underutilized card collections
-- Time-consuming manual deck analysis
-- Difficulty discovering new deck archetypes
+
+-   Redundant card purchases
+-   Underutilized card collections
+-   Time-consuming manual deck analysis
+-   Difficulty discovering new deck archetypes
 
 ### Solution Vision
+
 Create an intelligent CLI tool named **Ponderous** that analyzes collections against comprehensive EDHREC statistics to provide personalized deck recommendations with buildability scores, budget analysis, and missing card identification. The name reflects the thoughtful, deliberate analysis that serious deck builders employ—carefully weighing options and considering all possibilities before making informed decisions.
 
 ### Success Criteria
-- **Functional**: Accurate analysis of 500+ card collections against 100+ commanders ⏳ *Awaiting API integration*
-- **Performance**: Analysis completion within 30 seconds ⏳ *Awaiting analysis engine*
-- **Quality**: Enterprise-grade code with TDD and clean architecture ✅ **ACHIEVED**
-- **Usability**: Intuitive CLI with clear, actionable recommendations ✅ **ACHIEVED**
+
+-   **Functional**: Accurate analysis of 500+ card collections against 100+ commanders ⏳ _Awaiting API integration_
+-   **Performance**: Analysis completion within 30 seconds ⏳ _Awaiting analysis engine_
+-   **Quality**: Enterprise-grade code with TDD and clean architecture ✅ **ACHIEVED**
+-   **Usability**: Intuitive CLI with clear, actionable recommendations ✅ **ACHIEVED**
 
 ---
 
@@ -118,39 +133,41 @@ Create an intelligent CLI tool named **Ponderous** that analyzes collections aga
 
 ### Core Technologies
 
-| Technology | Purpose | Justification |
-|------------|---------|---------------|
-| **Python 3.11+** | Primary language | Excellent for data processing with rich ecosystem of testing frameworks |
-| **dlt (Data Load Tool)** | ETL framework | Modern open-source solution offering scalability and code-driven workflows with schema evolution support |
-| **DuckDB** | Analytics database | Columnar database with vectorized execution enabling 10-100x faster analytical queries than SQLite |
-| **Beautiful Soup 4** | Web scraping | Industry standard for reliable HTML parsing |
-| **Click** | CLI framework | Python's premier CLI library with excellent UX |
-| **pytest** | Testing framework | Supports TDD with comprehensive testing capabilities |
+| Technology               | Purpose            | Justification                                                                                            |
+| ------------------------ | ------------------ | -------------------------------------------------------------------------------------------------------- |
+| **Python 3.11+**         | Primary language   | Excellent for data processing with rich ecosystem of testing frameworks                                  |
+| **dlt (Data Load Tool)** | ETL framework      | Modern open-source solution offering scalability and code-driven workflows with schema evolution support |
+| **DuckDB**               | Analytics database | Columnar database with vectorized execution enabling 10-100x faster analytical queries than SQLite       |
+| **Beautiful Soup 4**     | Web scraping       | Industry standard for reliable HTML parsing                                                              |
+| **Click**                | CLI framework      | Python's premier CLI library with excellent UX                                                           |
+| **pytest**               | Testing framework  | Supports TDD with comprehensive testing capabilities                                                     |
 
 ### Quality & Development Tools
 
-| Tool | Purpose | Justification |
-|------|---------|---------------|
-| **pytest** | Unit/Integration testing | Modern test framework supporting TDD with behavior-focused testing |
-| **pytest-cov** | Coverage reporting | Track test coverage metrics |
-| **black** | Code formatting | Automatic PEP 8 compliance and consistent formatting |
-| **ruff** | Linting | Fast Python linter for code quality |
-| **mypy** | Type checking | Static type analysis for early error detection |
-| **pre-commit** | Git hooks | Automated quality checks on commit |
+| Tool           | Purpose                  | Justification                                                      |
+| -------------- | ------------------------ | ------------------------------------------------------------------ |
+| **pytest**     | Unit/Integration testing | Modern test framework supporting TDD with behavior-focused testing |
+| **pytest-cov** | Coverage reporting       | Track test coverage metrics                                        |
+| **black**      | Code formatting          | Automatic PEP 8 compliance and consistent formatting               |
+| **ruff**       | Linting                  | Fast Python linter for code quality                                |
+| **mypy**       | Type checking            | Static type analysis for early error detection                     |
+| **pre-commit** | Git hooks                | Automated quality checks on commit                                 |
 
 ### Architecture Principles
 
 **Clean Code Standards** (following Clean Code principles: readable, maintainable, and expressive code):
-- **DRY Principle**: Don't Repeat Yourself - use modules and functions for reusable functionality
-- **Single Responsibility**: Each function/class has one clear purpose
-- **Meaningful Names**: Descriptive naming conventions that immediately convey function purpose
-- **PEP 8 Compliance**: Adherence to Python's official style guide
+
+-   **DRY Principle**: Don't Repeat Yourself - use modules and functions for reusable functionality
+-   **Single Responsibility**: Each function/class has one clear purpose
+-   **Meaningful Names**: Descriptive naming conventions that immediately convey function purpose
+-   **PEP 8 Compliance**: Adherence to Python's official style guide
 
 **Test-Driven Development** (following Red-Green-Refactor TDD methodology):
-- Write failing tests first (Red)
-- Implement minimal code to pass (Green)
-- Refactor for quality (Refactor)
-- Focus on testing behavior rather than implementation details
+
+-   Write failing tests first (Red)
+-   Implement minimal code to pass (Green)
+-   Refactor for quality (Refactor)
+-   Focus on testing behavior rather than implementation details
 
 ---
 
@@ -159,32 +176,79 @@ Create an intelligent CLI tool named **Ponderous** that analyzes collections aga
 ### Phase 1: Core MVP ✅
 
 #### F1.1: Multi-User Collection Management
-- [ ] **F1.1.1**: Support multiple user accounts with unique identifiers
-- [ ] **F1.1.2**: Store collections from multiple sources (Moxfield primary)
-- [ ] **F1.1.3**: Track collection changes and sync timestamps
-- [ ] **F1.1.4**: Extensible schema for future collection sources (Archidekt)
+
+-   [ ] **F1.1.1**: Support multiple user accounts with unique identifiers
+-   [ ] **F1.1.2**: Store collections from multiple file sources (Moxfield CSV primary)
+-   [ ] **F1.1.3**: Track collection changes and import timestamps
+-   [ ] **F1.1.4**: Extensible schema for future collection sources (Archidekt, MTGGoldfish)
 
 **CLI Interface:**
+
 ```bash
-ponderous sync-collection --username <moxfield_user> --source moxfield
+ponderous import-collection --file collection.csv --username <user> --source moxfield-csv
+ponderous sync-collection --username <moxfield_user> --source moxfield  # Fallback API method
 ponderous list-users
 ponderous user-stats --user-id <user_id>
 ```
 
 **TDD Requirements:**
-- [ ] Test user creation and validation
-- [ ] Test collection sync with mock API responses
-- [ ] Test data persistence and retrieval
-- [ ] Test error handling for invalid users/sources
 
-#### F1.2: EDHREC Data Extraction
-- [ ] **F1.2.1**: Scrape commander overview statistics
-- [ ] **F1.2.2**: Extract deck archetypes (Aggro/Control/Combo/Midrange)
-- [ ] **F1.2.3**: Parse budget variations (budget/mid/high/cEDH)
-- [ ] **F1.2.4**: Capture card inclusion rates and synergy scores
-- [ ] **F1.2.5**: Respect rate limiting (1.5 req/sec)
+-   [ ] Test user creation and validation
+-   [ ] Test CSV file parsing and validation
+-   [ ] Test collection import with various file formats
+-   [ ] Test data persistence and retrieval
+-   [ ] Test error handling for invalid files/formats
+
+#### F1.1.5: Collection File Import System
+
+-   [ ] **F1.1.5.1**: Parse Moxfield CSV format with exact column matching
+-   [ ] **F1.1.5.2**: Validate card names and set information
+-   [ ] **F1.1.5.3**: Support foil quantity and condition parsing
+-   [ ] **F1.1.5.4**: Handle missing or optional CSV columns gracefully
+-   [ ] **F1.1.5.5**: Preview import before applying changes
+
+**Moxfield CSV Format:**
+
+```csv
+Count,Name,Edition,Condition,Language,Foil,Tag
+4,Lightning Bolt,Magic 2011,Near Mint,English,,Commander
+1,Sol Ring,Commander 2019,Near Mint,English,foil,Artifact
+```
+
+**CSV Requirements:**
+
+-   **Required Columns**: Count, Name, Edition (exact case-sensitive matching)
+-   **Optional Columns**: Condition, Language, Foil, Tag
+-   **Edition Validation**: Fuzzy matching for set names with fallback to alphabetical first
+-   **Condition Mapping**: NM/LP/MP/HP support with full name alternatives
 
 **CLI Interface:**
+
+```bash
+ponderous import-collection --file collection.csv --username blind_eye --source moxfield-csv
+ponderous import-collection --file collection.json --username user123 --source generic-json
+ponderous import-collection --file collection.csv --username user123 --source archidekt --preview
+ponderous validate-collection-file --file collection.csv --format moxfield-csv
+```
+
+**TDD Requirements:**
+
+-   [ ] Test CSV parsing with required/optional columns
+-   [ ] Test card name validation and fuzzy set matching
+-   [ ] Test foil and condition parsing edge cases
+-   [ ] Test file validation and error reporting
+-   [ ] Test preview mode functionality
+
+#### F1.2: EDHREC Data Extraction
+
+-   [ ] **F1.2.1**: Scrape commander overview statistics
+-   [ ] **F1.2.2**: Extract deck archetypes (Aggro/Control/Combo/Midrange)
+-   [ ] **F1.2.3**: Parse budget variations (budget/mid/high/cEDH)
+-   [ ] **F1.2.4**: Capture card inclusion rates and synergy scores
+-   [ ] **F1.2.5**: Respect rate limiting (1.5 req/sec)
+
+**CLI Interface:**
+
 ```bash
 ponderous update-edhrec --commanders-file popular_commanders.txt
 ponderous update-edhrec --popular-only --limit 100
@@ -192,19 +256,22 @@ ponderous edhrec-stats --commander "Atraxa, Praetors' Voice"
 ```
 
 **TDD Requirements:**
-- [ ] Test HTML parsing with mock responses
-- [ ] Test rate limiting compliance
-- [ ] Test data normalization and validation
-- [ ] Test error handling for failed requests
+
+-   [ ] Test HTML parsing with mock responses
+-   [ ] Test rate limiting compliance
+-   [ ] Test data normalization and validation
+-   [ ] Test error handling for failed requests
 
 #### F1.3: Commander-Based Deck Recommendations
-- [ ] **F1.3.1**: Input commander name to get deck variants
-- [ ] **F1.3.2**: Calculate completion percentages by archetype/budget
-- [ ] **F1.3.3**: Generate buildability scores (weighted by synergy)
-- [ ] **F1.3.4**: Identify missing high-impact cards
-- [ ] **F1.3.5**: Estimate costs to complete each variant
+
+-   [ ] **F1.3.1**: Input commander name to get deck variants
+-   [ ] **F1.3.2**: Calculate completion percentages by archetype/budget
+-   [ ] **F1.3.3**: Generate buildability scores (weighted by synergy)
+-   [ ] **F1.3.4**: Identify missing high-impact cards
+-   [ ] **F1.3.5**: Estimate costs to complete each variant
 
 **CLI Interface:**
+
 ```bash
 ponderous recommend-decks "Meren of Clan Nel Toth" \
   --user-id moxfield_username \
@@ -219,6 +286,7 @@ ponderous deck-details "Meren of Clan Nel Toth" \
 ```
 
 **Expected Output:**
+
 ```
 🎯 Deck Recommendations for Meren of Clan Nel Toth
 👤 User: moxfield_username
@@ -241,19 +309,22 @@ ponderous deck-details "Meren of Clan Nel Toth" \
 ```
 
 **TDD Requirements:**
-- [ ] Test deck similarity algorithms
-- [ ] Test buildability score calculations
-- [ ] Test filtering and sorting logic
-- [ ] Test CLI output formatting
+
+-   [ ] Test deck similarity algorithms
+-   [ ] Test buildability score calculations
+-   [ ] Test filtering and sorting logic
+-   [ ] Test CLI output formatting
 
 #### F1.4: Collection-Based Commander Discovery
-- [ ] **F1.4.1**: Analyze user collection to find optimal commanders
-- [ ] **F1.4.2**: Score commanders by collection compatibility
-- [ ] **F1.4.3**: Filter by color identity, budget brackets, archetypes
-- [ ] **F1.4.4**: Rank by popularity, power level, and buildability
-- [ ] **F1.4.5**: Support multi-format analysis (not just Commander)
+
+-   [ ] **F1.4.1**: Analyze user collection to find optimal commanders
+-   [ ] **F1.4.2**: Score commanders by collection compatibility
+-   [ ] **F1.4.3**: Filter by color identity, budget brackets, archetypes
+-   [ ] **F1.4.4**: Rank by popularity, power level, and buildability
+-   [ ] **F1.4.5**: Support multi-format analysis (not just Commander)
 
 **CLI Interface:**
+
 ```bash
 # Primary discovery command
 ponderous discover-commanders --user-id moxfield_username \
@@ -282,6 +353,7 @@ ponderous discover-commanders \
 ```
 
 **Expected Output:**
+
 ```
 🔍 Commander Discovery for moxfield_username
 Collection: 847 unique cards, $12,450 total value
@@ -303,6 +375,7 @@ Rank | Commander                  | Colors | Budget  | Archetype | Owned | Compl
 ```
 
 **Advanced Filtering Parameters:**
+
 ```bash
 # Color identity options
 --colors "W,U,B,R,G"           # Single colors
@@ -343,32 +416,36 @@ Rank | Commander                  | Colors | Budget  | Archetype | Owned | Compl
 ```
 
 **TDD Requirements:**
-- [ ] Test collection analysis algorithms across color combinations
-- [ ] Test filtering logic with multiple parameter combinations
-- [ ] Test ranking and scoring systems
-- [ ] Test output formatting for different display modes
-- [ ] Test edge cases (empty collections, no matches, etc.)
+
+-   [ ] Test collection analysis algorithms across color combinations
+-   [ ] Test filtering logic with multiple parameter combinations
+-   [ ] Test ranking and scoring systems
+-   [ ] Test output formatting for different display modes
+-   [ ] Test edge cases (empty collections, no matches, etc.)
 
 ### Phase 2: Enhanced Analytics ✅
 
 #### F2.1: Advanced Filtering & Search
-- [ ] **F2.1.1**: Filter by color identity
-- [ ] **F2.1.2**: Filter by budget ranges
-- [ ] **F2.1.3**: Filter by deck archetypes
-- [ ] **F2.1.4**: Search by card names in collection
-- [ ] **F2.1.5**: Multi-commander analysis
+
+-   [ ] **F2.1.1**: Filter by color identity
+-   [ ] **F2.1.2**: Filter by budget ranges
+-   [ ] **F2.1.3**: Filter by deck archetypes
+-   [ ] **F2.1.4**: Search by card names in collection
+-   [ ] **F2.1.5**: Multi-commander analysis
 
 #### F2.2: Collection Analytics
-- [ ] **F2.2.1**: Collection value tracking
-- [ ] **F2.2.2**: Card distribution analysis
-- [ ] **F2.2.3**: Synergy overlap identification
-- [ ] **F2.2.4**: Investment optimization recommendations
+
+-   [ ] **F2.2.1**: Collection value tracking
+-   [ ] **F2.2.2**: Card distribution analysis
+-   [ ] **F2.2.3**: Synergy overlap identification
+-   [ ] **F2.2.4**: Investment optimization recommendations
 
 #### F2.3: Data Export & Reporting
-- [ ] **F2.3.1**: Export recommendations to JSON/CSV
-- [ ] **F2.3.2**: Generate collection reports
-- [ ] **F2.3.3**: Missing cards shopping lists
-- [ ] **F2.3.4**: Historical analysis tracking
+
+-   [ ] **F2.3.1**: Export recommendations to JSON/CSV
+-   [ ] **F2.3.2**: Generate collection reports
+-   [ ] **F2.3.3**: Missing cards shopping lists
+-   [ ] **F2.3.4**: Historical analysis tracking
 
 ---
 
@@ -446,30 +523,49 @@ CREATE TABLE deck_card_inclusions (
 
 ### Core Component Interfaces
 
-#### ETL Pipeline (dlt-based)
+#### Collection Import Pipeline (dlt-based)
 
 ```python
 @dlt.source
-def moxfield_collection_source(username: str) -> Iterator[Dict[str, Any]]:
-    """Extract collection data from Moxfield API
+def file_collection_source(file_path: str, format_type: str) -> Iterator[Dict[str, Any]]:
+    """Extract collection data from CSV/JSON files
 
     Args:
-        username: Moxfield username
+        file_path: Path to collection file
+        format_type: File format (moxfield-csv, archidekt-csv, generic-json)
 
     Yields:
         Collection items with standardized schema
 
     Raises:
-        MoxfieldAPIError: When API request fails
+        FileFormatError: When file format is invalid
         ValidationError: When data format is invalid
     """
 
-@dlt.transformer(data_from=moxfield_collection_source)
+class CollectionImporter:
+    """Base interface for collection file importers"""
+
+    def validate_file(self, file_path: str) -> ValidationResult:
+        """Validate file format and required columns"""
+
+    def parse_file(self, file_path: str) -> Iterator[CollectionItem]:
+        """Parse file and yield standardized collection items"""
+
+class MoxfieldCSVImporter(CollectionImporter):
+    """Importer for Moxfield CSV export format"""
+
+    REQUIRED_COLUMNS = ["Count", "Name", "Edition"]
+    OPTIONAL_COLUMNS = ["Condition", "Language", "Foil", "Tag"]
+
+    def parse_row(self, row: Dict[str, str]) -> CollectionItem:
+        """Parse single CSV row to collection item"""
+
+@dlt.transformer(data_from=file_collection_source)
 def normalize_collection_data(items: Iterator[Dict]) -> Iterator[Dict]:
     """Transform raw collection data to standard format
 
     Args:
-        items: Raw collection items from source
+        items: Raw collection items from file source
 
     Yields:
         Normalized collection records
@@ -622,10 +718,18 @@ def cli():
     """Ponderous - Thoughtful analysis of your MTG collection to discover buildable Commander decks"""
 
 @cli.command()
+@click.option('--file', 'file_path', required=True, type=click.Path(exists=True))
+@click.option('--username', required=True)
+@click.option('--source', required=True, type=click.Choice(['moxfield-csv', 'archidekt-csv', 'generic-json']))
+@click.option('--preview', is_flag=True, help='Preview import without applying changes')
+def import_collection(file_path: str, username: str, source: str, preview: bool):
+    """Import collection from CSV/JSON file"""
+
+@cli.command()
 @click.option('--username', required=True)
 @click.option('--source', default='moxfield')
 def sync_collection(username: str, source: str):
-    """Sync user collection from specified source"""
+    """Sync user collection from API source (fallback method)"""
 
 @cli.command()
 @click.argument('commander_name')
@@ -706,10 +810,11 @@ def analyze_collection(user_id: str, show_themes: bool, show_gaps: bool):
 Following the Red-Green-Refactor TDD cycle:
 
 #### Phase 1: Red (Write Failing Tests)
-- [ ] **Unit Tests**: Test individual functions and methods
-- [ ] **Integration Tests**: Test component interactions
-- [ ] **End-to-End Tests**: Test complete CLI workflows
-- [ ] **Property Tests**: Test edge cases and invariants
+
+-   [ ] **Unit Tests**: Test individual functions and methods
+-   [ ] **Integration Tests**: Test component interactions
+-   [ ] **End-to-End Tests**: Test complete CLI workflows
+-   [ ] **Property Tests**: Test edge cases and invariants
 
 ```python
 # Example TDD approach for deck analysis
@@ -745,21 +850,24 @@ class TestDeckAnalyzer:
 ```
 
 #### Phase 2: Green (Implement Minimal Code)
-- [ ] Write minimal implementation to pass tests
-- [ ] Focus on making tests pass, not optimization
-- [ ] Avoid over-engineering
+
+-   [ ] Write minimal implementation to pass tests
+-   [ ] Focus on making tests pass, not optimization
+-   [ ] Avoid over-engineering
 
 #### Phase 3: Refactor (Improve Code Quality)
-- [ ] Apply clean code principles
-- [ ] Extract common functionality
-- [ ] Optimize performance where needed
-- [ ] Maintain test coverage
+
+-   [ ] Apply clean code principles
+-   [ ] Extract common functionality
+-   [ ] Optimize performance where needed
+-   [ ] Maintain test coverage
 
 ### Code Quality Standards
 
 Following Clean Code principles and Python best practices:
 
 #### Naming Conventions
+
 ```python
 # Good: Descriptive, intention-revealing names
 def calculate_deck_completion_percentage(owned_cards: Set[str], required_cards: List[str]) -> float:
@@ -771,6 +879,7 @@ def calc_pct(cards1, cards2):
 ```
 
 #### Function Design
+
 ```python
 # Good: Single responsibility, clear purpose
 def extract_synergy_score(card_element: BeautifulSoup) -> float:
@@ -792,6 +901,7 @@ def extract_and_parse_synergy(card_element):
 ```
 
 #### Error Handling
+
 ```python
 # Good: Specific exceptions with context
 class MoxfieldAPIError(Exception):
@@ -817,22 +927,25 @@ def fetch_collection(username: str) -> Dict[str, Any]:
 Following the testing pyramid: 50% unit tests, 30% integration tests, 20% end-to-end tests:
 
 #### Unit Tests (50%)
-- [ ] Test individual functions in isolation
-- [ ] Mock external dependencies (APIs, databases)
-- [ ] Focus on business logic and edge cases
-- [ ] Fast execution (< 1ms per test)
+
+-   [ ] Test individual functions in isolation
+-   [ ] Mock external dependencies (APIs, databases)
+-   [ ] Focus on business logic and edge cases
+-   [ ] Fast execution (< 1ms per test)
 
 #### Integration Tests (30%)
-- [ ] Test component interactions
-- [ ] Test database operations with test fixtures
-- [ ] Test ETL pipeline components
-- [ ] Moderate execution time (< 100ms per test)
+
+-   [ ] Test component interactions
+-   [ ] Test database operations with test fixtures
+-   [ ] Test ETL pipeline components
+-   [ ] Moderate execution time (< 100ms per test)
 
 #### End-to-End Tests (20%)
-- [ ] Test complete CLI workflows
-- [ ] Test with sample data files
-- [ ] Test error scenarios and recovery
-- [ ] Slower execution acceptable (< 5s per test)
+
+-   [ ] Test complete CLI workflows
+-   [ ] Test with sample data files
+-   [ ] Test error scenarios and recovery
+-   [ ] Slower execution acceptable (< 5s per test)
 
 ```python
 # Test structure example
@@ -862,72 +975,83 @@ tests/
 ### Phase 1: Foundation & Core Features (MVP)
 
 #### 🏗️ Project Setup & Infrastructure ✅ COMPLETED
-- [x] **T1.1**: Initialize Python project with virtual environment and project name "Ponderous" ✅
-- [x] **T1.2**: Configure development dependencies (pytest, black, ruff, mypy) ✅
-- [x] **T1.3**: Set up pre-commit hooks for code quality ✅
-- [x] **T1.4**: Create project structure with clean architecture ✅
-- [ ] **T1.5**: Configure CI/CD pipeline (GitHub Actions) ⏳
-- [x] **T1.6**: Set up DuckDB database schema ✅
-- [x] **T1.7**: Create comprehensive README with setup instructions for Ponderous CLI ✅
+
+-   [x] **T1.1**: Initialize Python project with virtual environment and project name "Ponderous" ✅
+-   [x] **T1.2**: Configure development dependencies (pytest, black, ruff, mypy) ✅
+-   [x] **T1.3**: Set up pre-commit hooks for code quality ✅
+-   [x] **T1.4**: Create project structure with clean architecture ✅
+-   [ ] **T1.5**: Configure CI/CD pipeline (GitHub Actions) ⏳
+-   [x] **T1.6**: Set up DuckDB database schema ✅
+-   [x] **T1.7**: Create comprehensive README with setup instructions for Ponderous CLI ✅
 
 #### 🧪 TDD Test Suite Foundation ✅ COMPLETED
-- [x] **T1.8**: Create pytest configuration and test structure ✅
-- [x] **T1.9**: Write test fixtures for sample data ✅
-- [x] **T1.10**: Set up test coverage reporting ✅
-- [x] **T1.11**: Create mock objects for external APIs ✅
-- [x] **T1.12**: Implement property-based testing for edge cases ✅
+
+-   [x] **T1.8**: Create pytest configuration and test structure ✅
+-   [x] **T1.9**: Write test fixtures for sample data ✅
+-   [x] **T1.10**: Set up test coverage reporting ✅
+-   [x] **T1.11**: Create mock objects for external APIs ✅
+-   [x] **T1.12**: Implement property-based testing for edge cases ✅
 
 #### 🔌 Data Collection Infrastructure
-- [ ] **T1.13**: Implement dlt pipeline configuration
-- [ ] **T1.14**: Create Moxfield API client with TDD
-  - [ ] Write failing tests for API client
-  - [ ] Implement minimal API client
-  - [ ] Refactor for error handling and rate limiting
-- [ ] **T1.15**: Build EDHREC scraper with Beautiful Soup + TDD
-  - [ ] Write tests for HTML parsing with mock responses
-  - [ ] Implement basic scraping functionality
-  - [ ] Add rate limiting and error recovery
-- [ ] **T1.16**: Create data transformation pipeline
-- [ ] **T1.17**: Implement collection sync functionality
+
+-   [ ] **T1.13**: Implement dlt pipeline configuration
+-   [ ] **T1.14**: Create Moxfield API client with TDD
+    -   [ ] Write failing tests for API client
+    -   [ ] Implement minimal API client
+    -   [ ] Refactor for error handling and rate limiting
+-   [ ] **T1.15**: Build collection file import system + TDD
+    -   [ ] Write tests for CSV parsing with various formats
+    -   [ ] Implement Moxfield CSV importer with validation
+    -   [ ] Add file format detection and error handling
+-   [ ] **T1.16**: Build EDHREC scraper with Beautiful Soup + TDD
+    -   [ ] Write tests for HTML parsing with mock responses
+    -   [ ] Implement basic scraping functionality
+    -   [ ] Add rate limiting and error recovery
+-   [ ] **T1.17**: Create data transformation pipeline
+-   [ ] **T1.18**: Implement collection import functionality
 
 #### 🏢 Multi-User Collection Management
-- [ ] **T1.18**: Design and implement user management system + TDD
-- [ ] **T1.19**: Create collection storage with source tracking + TDD
-- [ ] **T1.20**: Build collection sync commands + TDD
-- [ ] **T1.21**: Implement data validation and integrity checks + TDD
+
+-   [ ] **T1.19**: Design and implement user management system + TDD
+-   [ ] **T1.20**: Create collection storage with source tracking + TDD
+-   [ ] **T1.21**: Build collection import commands + TDD
+-   [ ] **T1.22**: Implement data validation and integrity checks + TDD
 
 #### 🧮 Deck Analysis Engine
-- [ ] **T1.22**: Implement deck similarity algorithms + TDD
-  - [ ] Write tests for various completion scenarios
-  - [ ] Implement basic completion calculation
-  - [ ] Add synergy weighting and optimization
-- [ ] **T1.23**: Create buildability scoring system + TDD
-- [ ] **T1.24**: Build recommendation ranking logic + TDD
-- [ ] **T1.25**: Implement missing card identification + TDD
-- [ ] **T1.26**: Create commander discovery algorithms + TDD
-  - [ ] Write tests for collection analysis across color combinations
-  - [ ] Implement color affinity scoring
-  - [ ] Add archetype compatibility analysis
-  - [ ] Build theme synergy detection
+
+-   [ ] **T1.23**: Implement deck similarity algorithms + TDD
+    -   [ ] Write tests for various completion scenarios
+    -   [ ] Implement basic completion calculation
+    -   [ ] Add synergy weighting and optimization
+-   [ ] **T1.24**: Create buildability scoring system + TDD
+-   [ ] **T1.25**: Build recommendation ranking logic + TDD
+-   [ ] **T1.26**: Implement missing card identification + TDD
+-   [ ] **T1.27**: Create commander discovery algorithms + TDD
+    -   [ ] Write tests for collection analysis across color combinations
+    -   [ ] Implement color affinity scoring
+    -   [ ] Add archetype compatibility analysis
+    -   [ ] Build theme synergy detection
 
 #### 💻 CLI Interface ✅ COMPLETED
-- [x] **T1.27**: Create Click-based CLI framework + TDD ✅
-- [x] **T1.28**: Implement collection sync commands + TDD ✅
-- [x] **T1.29**: Build deck recommendation commands + TDD ✅
-- [x] **T1.30**: Add detailed analysis commands + TDD ✅
-- [x] **T1.31**: Create commander discovery commands + TDD ✅
-  - [x] Implement filtering logic with parameter validation ✅
-  - [x] Add multiple output formats (table/JSON/CSV) ✅
-  - [x] Create quick discovery shortcuts ✅
-- [x] **T1.32**: Add collection analysis commands + TDD ✅
-- [x] **T1.33**: Create user management commands + TDD ✅
+
+-   [x] **T1.27**: Create Click-based CLI framework + TDD ✅
+-   [x] **T1.28**: Implement collection sync commands + TDD ✅
+-   [x] **T1.29**: Build deck recommendation commands + TDD ✅
+-   [x] **T1.30**: Add detailed analysis commands + TDD ✅
+-   [x] **T1.31**: Create commander discovery commands + TDD ✅
+    -   [x] Implement filtering logic with parameter validation ✅
+    -   [x] Add multiple output formats (table/JSON/CSV) ✅
+    -   [x] Create quick discovery shortcuts ✅
+-   [x] **T1.32**: Add collection analysis commands + TDD ✅
+-   [x] **T1.33**: Create user management commands + TDD ✅
 
 #### ✅ Testing & Quality Assurance 🔄 IN PROGRESS
-- [x] **T1.34**: Achieve 95%+ test coverage ✅ (Domain/Infrastructure: 100%, CLI: 85%)
-- [ ] **T1.35**: Complete integration testing suite ⏳ (CLI test fixtures need improvement)
-- [ ] **T1.36**: Implement end-to-end workflow tests ⏳
-- [x] **T1.37**: Performance testing and optimization ✅
-- [x] **T1.38**: Code quality review and refactoring ✅
+
+-   [x] **T1.34**: Achieve 95%+ test coverage ✅ (Domain/Infrastructure: 100%, CLI: 85%)
+-   [ ] **T1.35**: Complete integration testing suite ⏳ (CLI test fixtures need improvement)
+-   [ ] **T1.36**: Implement end-to-end workflow tests ⏳
+-   [x] **T1.37**: Performance testing and optimization ✅
+-   [x] **T1.38**: Code quality review and refactoring ✅
 
 ---
 
@@ -936,36 +1060,41 @@ tests/
 ### **Immediate Next Steps** (Week 1-2)
 
 #### 🔧 **Priority 1: Complete Test Infrastructure**
-- **Task**: Fix CLI test suite fixture and mocking issues
-- **Impact**: Achieve 100% test coverage and validate CLI robustness
-- **Effort**: 4-6 hours
-- **Status**: CLI functionality is 100% working, just test infrastructure needs fixes
 
-#### 🌐 **Priority 2: External API Integration**
-- **Task**: Implement Moxfield API client with authentication and rate limiting
-- **Impact**: Enable actual collection data synchronization
-- **Effort**: 12-16 hours with TDD
-- **Dependencies**: None (can start immediately)
+-   **Task**: Fix CLI test suite fixture and mocking issues
+-   **Impact**: Achieve 100% test coverage and validate CLI robustness
+-   **Effort**: 4-6 hours
+-   **Status**: CLI functionality is 100% working, just test infrastructure needs fixes
+
+#### 📁 **Priority 2: Collection File Import System**
+
+-   **Task**: Implement Moxfield CSV import with validation and error handling
+-   **Impact**: Enable immediate collection data access via file upload
+-   **Effort**: 8-12 hours with TDD
+-   **Dependencies**: None (can start immediately)
 
 #### 🕷️ **Priority 3: EDHREC Web Scraper**
-- **Task**: Build Beautiful Soup-based scraper for commander statistics
-- **Impact**: Enable deck recommendations with real EDHREC data
-- **Effort**: 16-20 hours with TDD
-- **Dependencies**: None (can run parallel with Priority 2)
+
+-   **Task**: Build Beautiful Soup-based scraper for commander statistics
+-   **Impact**: Enable deck recommendations with real EDHREC data
+-   **Effort**: 16-20 hours with TDD
+-   **Dependencies**: None (can run parallel with Priority 2)
 
 ### **Medium-Term Goals** (Week 3-4)
 
 #### 🧮 **Analysis Engine Implementation**
-- **Task**: Implement core deck analysis algorithms (buildability scoring, commander discovery)
-- **Impact**: Connect CLI commands to actual functionality
-- **Effort**: 24-32 hours with TDD
-- **Dependencies**: Requires API integrations (Priority 2 & 3)
+
+-   **Task**: Implement core deck analysis algorithms (buildability scoring, commander discovery)
+-   **Impact**: Connect CLI commands to actual functionality
+-   **Effort**: 24-32 hours with TDD
+-   **Dependencies**: Requires API integrations (Priority 2 & 3)
 
 #### 📊 **Application Layer**
-- **Task**: Implement use cases and orchestration services
-- **Impact**: Complete the clean architecture implementation
-- **Effort**: 16-20 hours with TDD
-- **Dependencies**: Requires analysis engine
+
+-   **Task**: Implement use cases and orchestration services
+-   **Impact**: Complete the clean architecture implementation
+-   **Effort**: 16-20 hours with TDD
+-   **Dependencies**: Requires analysis engine
 
 ### **Success Blockers to Address**
 
@@ -976,89 +1105,175 @@ tests/
 
 ---
 
-### Phase 2: Enhanced Analytics & Features
+### Phase 2: Enhanced Analytics & Multi-Platform Support
+
+#### 📂 Multi-Platform Collection Import
+
+-   [ ] **T2.1**: Implement Archidekt CSV import support + TDD
+-   [ ] **T2.2**: Add MTGGoldfish collection format support + TDD
+-   [ ] **T2.3**: Create Deckbox CSV import functionality + TDD
+-   [ ] **T2.4**: Build generic JSON collection format + TDD
+-   [ ] **T2.5**: Add Scryfall API integration for card data enhancement + TDD
+-   [ ] **T2.6**: Implement file format auto-detection + TDD
 
 #### 🔍 Advanced Filtering & Search
-- [ ] **T2.1**: Implement color identity filtering + TDD
-- [ ] **T2.2**: Add budget range filtering + TDD
-- [ ] **T2.3**: Create archetype-based filtering + TDD
-- [ ] **T2.4**: Build card search functionality + TDD
-- [ ] **T2.5**: Add multi-commander analysis + TDD
+
+-   [ ] **T2.7**: Implement color identity filtering + TDD
+-   [ ] **T2.8**: Add budget range filtering + TDD
+-   [ ] **T2.9**: Create archetype-based filtering + TDD
+-   [ ] **T2.10**: Build card search functionality + TDD
+-   [ ] **T2.11**: Add multi-commander analysis + TDD
 
 #### 📊 Collection Analytics
-- [ ] **T2.6**: Implement collection value tracking + TDD
-- [ ] **T2.7**: Create card distribution analysis + TDD
-- [ ] **T2.8**: Build synergy overlap identification + TDD
-- [ ] **T2.9**: Add investment optimization recommendations + TDD
+
+-   [ ] **T2.6**: Implement collection value tracking + TDD
+-   [ ] **T2.7**: Create card distribution analysis + TDD
+-   [ ] **T2.8**: Build synergy overlap identification + TDD
+-   [ ] **T2.9**: Add investment optimization recommendations + TDD
 
 #### 📈 Reporting & Export
-- [ ] **T2.10**: Create JSON/CSV export functionality + TDD
-- [ ] **T2.11**: Build collection report generation + TDD
-- [ ] **T2.12**: Implement shopping list creation + TDD
-- [ ] **T2.13**: Add historical analysis tracking + TDD
+
+-   [ ] **T2.10**: Create JSON/CSV export functionality + TDD
+-   [ ] **T2.11**: Build collection report generation + TDD
+-   [ ] **T2.12**: Implement shopping list creation + TDD
+-   [ ] **T2.13**: Add historical analysis tracking + TDD
 
 #### 🚀 Performance & Scalability
-- [ ] **T2.14**: Optimize database queries and indexing
-- [ ] **T2.15**: Implement caching for frequent operations
-- [ ] **T2.16**: Add parallel processing for large collections
-- [ ] **T2.17**: Performance benchmarking and monitoring
+
+-   [ ] **T2.14**: Optimize database queries and indexing
+-   [ ] **T2.15**: Implement caching for frequent operations
+-   [ ] **T2.16**: Add parallel processing for large collections
+-   [ ] **T2.17**: Performance benchmarking and monitoring
 
 ### Phase 3: Cloud Migration & Production
 
 #### ☁️ Cloud Infrastructure
-- [ ] **T3.1**: Design cloud architecture (Dagster orchestration)
-- [ ] **T3.2**: Implement containerization with Docker
-- [ ] **T3.3**: Set up cloud storage for DuckDB
-- [ ] **T3.4**: Create automated deployment pipeline
-- [ ] **T3.5**: Implement monitoring and alerting
+
+-   [ ] **T3.1**: Design cloud architecture (Dagster orchestration)
+-   [ ] **T3.2**: Implement containerization with Docker
+-   [ ] **T3.3**: Set up cloud storage for DuckDB
+-   [ ] **T3.4**: Create automated deployment pipeline
+-   [ ] **T3.5**: Implement monitoring and alerting
 
 #### 🔧 Production Hardening
-- [ ] **T3.6**: Add comprehensive logging and error tracking
-- [ ] **T3.7**: Implement graceful error recovery
-- [ ] **T3.8**: Create backup and disaster recovery procedures
-- [ ] **T3.9**: Security audit and hardening
-- [ ] **T3.10**: Load testing and capacity planning
+
+-   [ ] **T3.6**: Add comprehensive logging and error tracking
+-   [ ] **T3.7**: Implement graceful error recovery
+-   [ ] **T3.8**: Create backup and disaster recovery procedures
+-   [ ] **T3.9**: Security audit and hardening
+-   [ ] **T3.10**: Load testing and capacity planning
 
 ---
+
+## User Workflows
+
+### Primary Collection Import Workflow
+
+#### Step 1: Export Collection from Moxfield
+
+1. Navigate to your Moxfield collection page
+2. Use the export feature to download collection as CSV
+3. Ensure export includes all required columns: Count, Name, Edition
+
+#### Step 2: Import to Ponderous
+
+```bash
+# Basic import
+ponderous import-collection --file collection.csv --username blind_eye --source moxfield-csv
+
+# Preview before importing
+ponderous import-collection --file collection.csv --username blind_eye --source moxfield-csv --preview
+
+# Validate file format first
+ponderous validate-collection-file --file collection.csv --format moxfield-csv
+```
+
+#### Step 3: Analyze and Discover
+
+```bash
+# Discover commanders based on imported collection
+ponderous discover-commanders --user-id blind_eye --colors BG --budget-max 300
+
+# Get specific deck recommendations
+ponderous recommend-decks "Meren of Clan Nel Toth" --user-id blind_eye --min-completion 0.75
+```
+
+### Alternative Platform Workflows (Phase 2)
+
+#### Archidekt Import
+
+```bash
+ponderous import-collection --file archidekt_export.csv --username user123 --source archidekt-csv
+```
+
+#### Generic JSON Format
+
+```bash
+ponderous import-collection --file collection.json --username user123 --source generic-json
+```
+
+### Error Recovery Workflow
+
+#### File Validation Issues
+
+```bash
+# Check file format and get detailed errors
+ponderous validate-collection-file --file collection.csv --format moxfield-csv --verbose
+
+# Preview shows potential issues before import
+ponderous import-collection --file collection.csv --username user123 --source moxfield-csv --preview
+```
+
+#### Import Troubleshooting
+
+-   **Missing Required Columns**: Tool provides specific column names needed
+-   **Invalid Card Names**: Fuzzy matching with suggestions for unrecognized cards
+-   **Set Name Issues**: Automatic fallback to alphabetically first matching set
+-   **Quantity Parsing**: Clear error messages for invalid quantity values
 
 ## Success Metrics & Acceptance Criteria
 
 ### Functional Requirements
-- [ ] ✅ **Accuracy**: 95%+ accuracy in deck buildability calculations
-- [ ] ✅ **Performance**: Analysis completes within 30 seconds for 500+ card collections
-- [ ] ✅ **Coverage**: Support for 100+ popular commanders with comprehensive statistics
-- [ ] ✅ **Reliability**: 99.9% uptime for core functionality
+
+-   [ ] ✅ **Accuracy**: 95%+ accuracy in deck buildability calculations
+-   [ ] ✅ **Performance**: Analysis completes within 30 seconds for 500+ card collections
+-   [ ] ✅ **Coverage**: Support for 100+ popular commanders with comprehensive statistics
+-   [ ] ✅ **Reliability**: 99.9% uptime for core functionality
 
 ### Quality Requirements
-- [ ] ✅ **Test Coverage**: 95%+ code coverage with comprehensive test suite
-- [ ] ✅ **Code Quality**: 0 critical code smells, PEP 8 compliance
-- [ ] ✅ **Documentation**: Complete API documentation and user guides
-- [ ] ✅ **Maintainability**: Modular architecture supporting easy extension
+
+-   [ ] ✅ **Test Coverage**: 95%+ code coverage with comprehensive test suite
+-   [ ] ✅ **Code Quality**: 0 critical code smells, PEP 8 compliance
+-   [ ] ✅ **Documentation**: Complete API documentation and user guides
+-   [ ] ✅ **Maintainability**: Modular architecture supporting easy extension
 
 ### User Experience Requirements
-- [ ] ✅ **CLI Usability**: Intuitive commands with helpful error messages
-- [ ] ✅ **Output Quality**: Clear, actionable recommendations with context
-- [ ] ✅ **Error Handling**: Graceful degradation with informative feedback
-- [ ] ✅ **Performance**: Responsive interaction with progress indicators
+
+-   [ ] ✅ **CLI Usability**: Intuitive commands with helpful error messages
+-   [ ] ✅ **Output Quality**: Clear, actionable recommendations with context
+-   [ ] ✅ **Error Handling**: Graceful degradation with informative feedback
+-   [ ] ✅ **Performance**: Responsive interaction with progress indicators
 
 ---
 
 ## Risk Assessment & Mitigation
 
 ### Technical Risks
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| EDHREC rate limiting | High | Medium | Implement respectful scraping, caching, fallback sources |
-| API changes (Moxfield) | High | Medium | Abstraction layer, multiple source support, monitoring |
-| Data quality issues | Medium | High | Comprehensive validation, data cleaning, error reporting |
-| Performance degradation | Medium | Low | Benchmarking, optimization, caching strategies |
+
+| Risk                    | Impact | Probability | Mitigation                                               |
+| ----------------------- | ------ | ----------- | -------------------------------------------------------- |
+| EDHREC rate limiting    | High   | Medium      | Implement respectful scraping, caching, fallback sources |
+| API changes (Moxfield)  | High   | Medium      | Abstraction layer, multiple source support, monitoring   |
+| Data quality issues     | Medium | High        | Comprehensive validation, data cleaning, error reporting |
+| Performance degradation | Medium | Low         | Benchmarking, optimization, caching strategies           |
 
 ### Business Risks
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| User adoption | High | Medium | Clear value proposition, excellent UX, documentation |
-| Competition | Medium | Low | Focus on quality, unique features, community engagement |
-| Data source availability | High | Low | Multiple sources, fallback mechanisms, offline mode |
+
+| Risk                     | Impact | Probability | Mitigation                                              |
+| ------------------------ | ------ | ----------- | ------------------------------------------------------- |
+| User adoption            | High   | Medium      | Clear value proposition, excellent UX, documentation    |
+| Competition              | Medium | Low         | Focus on quality, unique features, community engagement |
+| Data source availability | High   | Low         | Multiple sources, fallback mechanisms, offline mode     |
 
 ---
 
@@ -1067,13 +1282,15 @@ tests/
 This PRD provides a comprehensive roadmap for building **Ponderous**, a high-quality MTG collection analyzer using modern software development practices. The name reflects the thoughtful, deliberate analysis that serious deck builders employ when evaluating their collections and planning their next builds. The emphasis on TDD, clean code, and extensible architecture ensures the product will be maintainable, reliable, and scalable.
 
 **Next Steps:**
+
 1. Review and approve PRD with stakeholders
 2. Set up development environment and CI/CD pipeline
 3. Begin Phase 1 implementation with TDD approach
 4. Regular sprint reviews and quality assessments
 
 **Success depends on:**
-- Strict adherence to TDD methodology
-- Consistent application of clean code principles
-- Comprehensive testing at all levels
-- Regular code quality reviews and refactoring
+
+-   Strict adherence to TDD methodology
+-   Consistent application of clean code principles
+-   Comprehensive testing at all levels
+-   Regular code quality reviews and refactoring
