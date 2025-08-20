@@ -33,6 +33,7 @@ dependencies = [
     "tenacity>=8.2.0",
     "tomli>=2.0.0",
     "tomli-w>=1.0.0",
+    "playwright>=1.40.0",
 ]
 
 # Modern dependency groups (uv 2025 best practice)

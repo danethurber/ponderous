@@ -228,3 +228,43 @@ class TestMoxfieldCSVImporter:
         assert response.validation_only
         assert response.items_imported == 0  # No actual import in validation mode
         assert response.items_processed == 3
+
+    @pytest.mark.asyncio
+    async def test_import_collection_transformation(
+        self, importer: MoxfieldCSVImporter, valid_minimal_csv: Path
+    ) -> None:
+        """Test that raw data is automatically transformed to main collections table."""
+        request = ImportRequest(
+            file_path=valid_minimal_csv,
+            user_id="transform_test_user",
+            validate_only=False,
+        )
+
+        # Import the collection
+        response = await importer.import_collection(request)
+
+        assert response.success
+        assert response.items_imported == 3
+
+        # Verify data exists in both raw and main collections tables
+        raw_count = importer.db_connection.fetch_one(
+            "SELECT COUNT(*) FROM user_collections_raw WHERE user_id = ?",
+            ("transform_test_user",),
+        )
+        main_count = importer.db_connection.fetch_one(
+            "SELECT COUNT(*) FROM user_collections WHERE user_id = ?",
+            ("transform_test_user",),
+        )
+
+        assert raw_count[0] == 3  # Raw data preserved
+        assert main_count[0] == 3  # Data transformed to main table
+
+        # Verify transformation quality - check a specific card
+        card_data = importer.db_connection.fetch_one(
+            "SELECT card_name, quantity, source_id FROM user_collections WHERE user_id = ? LIMIT 1",
+            ("transform_test_user",),
+        )
+
+        assert card_data is not None
+        assert card_data[1] > 0  # Has quantity
+        assert card_data[2] == "moxfield"  # Source set correctly

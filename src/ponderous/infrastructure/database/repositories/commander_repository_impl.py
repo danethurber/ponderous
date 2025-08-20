@@ -21,9 +21,9 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
 
         result = self.fetch_one(
             """
-            SELECT name, card_id, color_identity, total_decks, popularity_rank,
+            SELECT commander_name, card_id, color_identity, total_decks, popularity_rank,
                    avg_deck_price, salt_score, power_level
-            FROM commanders WHERE LOWER(name) = LOWER(?)
+            FROM commanders WHERE LOWER(commander_name) = LOWER(?)
             """,
             (name,),
         )
@@ -42,7 +42,7 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
 
         results = self.fetch_all(
             """
-            SELECT name, card_id, color_identity, total_decks, popularity_rank,
+            SELECT commander_name, card_id, color_identity, total_decks, popularity_rank,
                    avg_deck_price, salt_score, power_level
             FROM commanders WHERE color_identity = ?
             ORDER BY popularity_rank
@@ -59,7 +59,7 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
 
         results = self.fetch_all(
             """
-            SELECT name, card_id, color_identity, total_decks, popularity_rank,
+            SELECT commander_name, card_id, color_identity, total_decks, popularity_rank,
                    avg_deck_price, salt_score, power_level
             FROM commanders
             ORDER BY popularity_rank
@@ -79,7 +79,7 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
 
         results = self.fetch_all(
             """
-            SELECT name, card_id, color_identity, total_decks, popularity_rank,
+            SELECT commander_name, card_id, color_identity, total_decks, popularity_rank,
                    avg_deck_price, salt_score, power_level
             FROM commanders
             WHERE avg_deck_price <= ?
@@ -100,7 +100,7 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
 
         results = self.fetch_all(
             """
-            SELECT name, card_id, color_identity, total_decks, popularity_rank,
+            SELECT commander_name, card_id, color_identity, total_decks, popularity_rank,
                    avg_deck_price, salt_score, power_level
             FROM commanders
             WHERE power_level >= ?
@@ -121,11 +121,9 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
 
     def store(self, commander: Commander) -> None:
         """Store a commander entity."""
-        self._ensure_commanders_table()
-
         query = """
             INSERT OR REPLACE INTO commanders (
-                name, card_id, color_identity, total_decks, popularity_rank,
+                commander_name, card_id, color_identity, total_decks, popularity_rank,
                 avg_deck_price, salt_score, power_level
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
@@ -155,8 +153,6 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
         if not commanders:
             return 0, 0
 
-        self._ensure_commanders_table()
-
         stored_count = 0
         skipped_count = 0
 
@@ -173,7 +169,7 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
                         conn.execute(
                             """
                             INSERT OR REPLACE INTO commanders (
-                                name, card_id, color_identity, total_decks, popularity_rank,
+                                commander_name, card_id, color_identity, total_decks, popularity_rank,
                                 avg_deck_price, salt_score, power_level
                             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             """,
@@ -240,68 +236,303 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
 
     def get_recommendations_for_collection(
         self,
-        user_id: str,  # noqa: ARG002
-        color_preferences: list[str] | None = None,  # noqa: ARG002
-        budget_max: float | None = None,  # noqa: ARG002
-        min_completion: float = 0.6,  # noqa: ARG002
-        limit: int = 20,  # noqa: ARG002
+        user_id: str,
+        color_preferences: list[str] | None = None,
+        budget_max: float | None = None,
+        min_completion: float = 0.6,
+        limit: int = 20,
     ) -> list[CommanderRecommendation]:
-        """Get commander recommendations based on user's collection."""
-        # This is a complex operation that requires:
-        # 1. Collection data analysis
-        # 2. Deck card lists
-        # 3. Buildability scoring
-        # For now, return empty list as placeholder
-        logger.warning(
-            "Commander recommendations not yet implemented - requires EDHREC deck data"
-        )
-        return []
+        """Get commander recommendations based on user's collection.
+
+        Args:
+            user_id: User identifier for collection lookup
+            color_preferences: List of preferred colors (e.g., ['W', 'U'])
+            budget_max: Maximum budget consideration
+            min_completion: Minimum buildability score to include
+            limit: Maximum number of recommendations
+
+        Returns:
+            List of commander recommendations sorted by buildability score
+        """
+        if not self.db.table_exists("commanders"):
+            logger.warning("No commanders table - run update-edhrec first")
+            return []
+
+        if not self.db.table_exists("deck_card_inclusions"):
+            logger.warning("No deck card inclusions table - run update-edhrec first")
+            return []
+
+        try:
+            # Get all commanders that have deck data
+            commanders_query = """
+                SELECT DISTINCT c.commander_name, c.card_id, c.color_identity, c.total_decks,
+                       c.popularity_rank, c.avg_deck_price, c.salt_score, c.power_level
+                FROM commanders c
+                INNER JOIN deck_card_inclusions d ON c.commander_name = d.commander_name
+                WHERE 1=1
+            """
+            params = []
+
+            # Apply color filter
+            if color_preferences:
+                color_str = "".join(sorted(color_preferences))
+                commanders_query += " AND c.color_identity = ?"
+                params.append(color_str)
+
+            # Apply budget filter
+            if budget_max:
+                commanders_query += " AND c.avg_deck_price <= ?"
+                params.append(budget_max)
+
+            commanders_query += " ORDER BY c.popularity_rank"
+
+            commander_results = self.fetch_all(commanders_query, tuple(params))
+
+            recommendations = []
+
+            for commander_row in commander_results:
+                commander_name = commander_row[0]
+
+                # Calculate buildability score
+                buildability_score = self.calculate_buildability_score(
+                    commander_name, user_id
+                )
+
+                # Skip if below minimum completion threshold
+                if buildability_score < min_completion:
+                    continue
+
+                # Convert to Commander domain object
+                commander = self._result_to_commander(commander_row)
+
+                # Get missing card analysis
+                missing_cards = self._get_missing_high_impact_cards(
+                    commander_name, user_id
+                )
+                missing_value = sum(
+                    card["price_usd"] for card in missing_cards if card["price_usd"]
+                )
+
+                # Get deck composition stats
+                deck_cards = self.fetch_all(
+                    "SELECT COUNT(*) FROM deck_card_inclusions WHERE commander_name = ?",
+                    (commander_name,),
+                )
+                total_cards = deck_cards[0][0] if deck_cards else 0
+                owned_cards = total_cards - len(missing_cards)
+
+                # Create recommendation using the existing model structure
+                recommendation = CommanderRecommendation(
+                    commander_name=commander.name,
+                    color_identity=commander.color_identity,
+                    archetype="default",  # TODO: Get from deck data
+                    budget_range="mid",  # TODO: Get from deck data
+                    avg_deck_price=commander.avg_deck_price,
+                    completion_percentage=buildability_score,  # 0-1 scale as per model
+                    buildability_score=buildability_score
+                    * 10,  # 0-10 scale as per model
+                    owned_cards=owned_cards,
+                    total_cards=total_cards,
+                    missing_cards_value=missing_value,
+                    popularity_rank=commander.popularity_rank,
+                    popularity_count=commander.total_decks,
+                    power_level=commander.power_level,
+                    salt_score=commander.salt_score,
+                    themes=[],  # TODO: Get from EDHREC data
+                    collection_synergy_score=buildability_score,  # Use buildability as synergy proxy
+                )
+
+                recommendations.append(recommendation)
+
+                # Stop if we have enough recommendations
+                if len(recommendations) >= limit:
+                    break
+
+            # Sort by buildability score (highest first)
+            recommendations.sort(key=lambda r: r.buildability_score, reverse=True)
+
+            logger.info(
+                f"Generated {len(recommendations)} recommendations for user {user_id}"
+            )
+            return recommendations[:limit]
+
+        except Exception as e:
+            logger.error(f"Failed to get recommendations for user {user_id}: {e}")
+            return []
 
     def calculate_buildability_score(
         self,
-        commander_name: str,  # noqa: ARG002
-        user_id: str,  # noqa: ARG002
+        commander_name: str,
+        user_id: str,
     ) -> float:
-        """Calculate buildability score for a commander based on user's collection."""
-        # This requires deck card lists and collection analysis
-        # For now, return 0 as placeholder
-        logger.warning(
-            "Buildability scoring not yet implemented - requires EDHREC deck data"
-        )
-        return 0.0
+        """Calculate buildability score for a commander based on user's collection.
 
-    def _ensure_commanders_table(self) -> None:
-        """Ensure commanders table exists."""
-        if not self.db.table_exists("commanders"):
-            self._create_commanders_table()
+        Args:
+            commander_name: Name of the commander to analyze
+            user_id: User identifier for collection lookup
 
-    def _create_commanders_table(self) -> None:
-        """Create commanders table."""
-        query = """
-            CREATE TABLE IF NOT EXISTS commanders (
-                name TEXT PRIMARY KEY,
-                card_id TEXT NOT NULL,
-                color_identity TEXT NOT NULL,
-                total_decks INTEGER DEFAULT 0,
-                popularity_rank INTEGER DEFAULT 999999,
-                avg_deck_price REAL DEFAULT 0.0,
-                salt_score REAL DEFAULT 0.0,
-                power_level REAL DEFAULT 5.0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+        Returns:
+            Buildability score from 0.0 to 1.0 (higher = more buildable)
         """
-        self.execute_query(query)
+        if not self.db.table_exists("deck_card_inclusions"):
+            logger.warning("No deck card inclusions table - run update-edhrec first")
+            return 0.0
 
-        # Create indexes for performance
-        indexes = [
-            "CREATE INDEX IF NOT EXISTS idx_commanders_color_identity ON commanders(color_identity)",
-            "CREATE INDEX IF NOT EXISTS idx_commanders_popularity ON commanders(popularity_rank)",
-            "CREATE INDEX IF NOT EXISTS idx_commanders_price ON commanders(avg_deck_price)",
-            "CREATE INDEX IF NOT EXISTS idx_commanders_power ON commanders(power_level)",
-        ]
+        if not self.db.table_exists("user_collections"):
+            logger.warning("No user collections table - import collection first")
+            return 0.0
 
-        for index_query in indexes:
-            self.execute_query(index_query)
+        try:
+            # Get deck composition for this commander
+            deck_cards = self.fetch_all(
+                """
+                SELECT card_name, inclusion_rate, synergy_score, category, price_usd
+                FROM deck_card_inclusions
+                WHERE commander_name = ? AND archetype_id = 'default' AND budget_range = 'mid'
+                ORDER BY inclusion_rate DESC
+                """,
+                (commander_name,),
+            )
+
+            if not deck_cards:
+                logger.warning(f"No deck data found for commander: {commander_name}")
+                return 0.0
+
+            # Get user's collection
+            user_cards = self.fetch_all(
+                """
+                SELECT card_name, quantity
+                FROM user_collections
+                WHERE user_id = ? AND quantity > 0
+                """,
+                (user_id,),
+            )
+
+            # Create set of owned cards for fast lookup
+            owned_cards = {card[0].lower() for card in user_cards}
+
+            # Calculate weighted buildability score
+            total_weight = 0.0
+            owned_weight = 0.0
+
+            for (
+                card_name,
+                inclusion_rate,
+                synergy_score,
+                category,
+                _price_usd,
+            ) in deck_cards:
+                # Calculate card weight based on inclusion rate and category
+                base_weight = inclusion_rate
+
+                # Category multipliers (more important cards have higher weight)
+                category_multiplier = {
+                    "signature": 2.0,  # Signature cards are essential
+                    "high_synergy": 1.5,  # High synergy cards are very important
+                    "staple": 1.2,  # Staples are important
+                    "basic": 1.0,  # Basic cards have normal weight
+                }.get(category, 1.0)
+
+                # Synergy score bonus (higher synergy = more important)
+                synergy_bonus = 1.0 + (synergy_score * 0.5)
+
+                card_weight = base_weight * category_multiplier * synergy_bonus
+                total_weight += card_weight
+
+                # Check if user owns this card
+                if card_name.lower() in owned_cards:
+                    owned_weight += card_weight
+
+            # Calculate final buildability score (0.0 to 1.0)
+            buildability = owned_weight / total_weight if total_weight > 0 else 0.0
+
+            logger.info(
+                f"Buildability for {commander_name}: {buildability:.3f} "
+                f"({len([c for c in deck_cards if c[0].lower() in owned_cards])}/{len(deck_cards)} cards owned)"
+            )
+
+            return buildability
+
+        except Exception as e:
+            logger.error(f"Failed to calculate buildability for {commander_name}: {e}")
+            return 0.0
+
+    def _get_missing_high_impact_cards(
+        self, commander_name: str, user_id: str
+    ) -> list[dict]:
+        """Get missing high-impact cards for a commander deck.
+
+        Args:
+            commander_name: Name of the commander
+            user_id: User identifier for collection lookup
+
+        Returns:
+            List of missing cards with impact analysis
+        """
+        try:
+            # Get deck composition
+            deck_cards = self.fetch_all(
+                """
+                SELECT card_name, inclusion_rate, synergy_score, category, price_usd
+                FROM deck_card_inclusions
+                WHERE commander_name = ? AND archetype_id = 'default' AND budget_range = 'mid'
+                ORDER BY inclusion_rate DESC
+                """,
+                (commander_name,),
+            )
+
+            # Get owned cards
+            owned_cards = {
+                card[0].lower()
+                for card in self.fetch_all(
+                    "SELECT card_name FROM user_collections WHERE user_id = ? AND quantity > 0",
+                    (user_id,),
+                )
+            }
+
+            missing_cards = []
+
+            for (
+                card_name,
+                inclusion_rate,
+                synergy_score,
+                category,
+                _price_usd,
+            ) in deck_cards:
+                if card_name.lower() not in owned_cards:
+                    # Calculate impact score (higher = more important to acquire)
+                    impact_score = inclusion_rate
+
+                    # Category impact multipliers
+                    if category == "signature":
+                        impact_score *= 2.0
+                    elif category == "high_synergy":
+                        impact_score *= 1.5
+                    elif category == "staple":
+                        impact_score *= 1.2
+
+                    # Synergy bonus
+                    impact_score *= 1.0 + synergy_score * 0.5
+
+                    missing_cards.append(
+                        {
+                            "card_name": card_name,
+                            "inclusion_rate": inclusion_rate,
+                            "synergy_score": synergy_score,
+                            "category": category,
+                            "price_usd": _price_usd or 0.0,
+                            "impact_score": impact_score,
+                        }
+                    )
+
+            # Sort by impact score (highest impact first)
+            missing_cards.sort(key=lambda x: x["impact_score"], reverse=True)
+
+            return missing_cards
+
+        except Exception as e:
+            logger.error(f"Failed to get missing cards for {commander_name}: {e}")
+            return []
 
     def _result_to_commander(self, row: tuple) -> Commander:
         """Convert database row to Commander entity."""

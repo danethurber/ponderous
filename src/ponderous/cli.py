@@ -14,7 +14,13 @@ from typing import Any, TypeVar
 import click
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+)
 from rich.table import Table
 
 from ponderous import __version__
@@ -429,45 +435,196 @@ def discover_commanders(ctx: click.Context, **kwargs: Any) -> None:  # noqa: ARG
         for filter_desc in active_filters:
             console.print(f"   • {filter_desc}")
 
-    # TODO: Implement commander discovery logic
-    console.print("[yellow]⚠️  Commander discovery not yet implemented[/yellow]")
+    # Import required components (RecommendationService available for future integration)
 
-    # Show example output structure
-    console.print("\n📋 [bold]Expected Output Format:[/bold]")
+    # Get database connection and repositories
+    db_connection = None
+    try:
+        db_connection = get_database_connection()
+        commander_repo = CommanderRepositoryImpl(db_connection)
 
-    table = Table(show_header=True, header_style="bold magenta")
-    table.add_column("Rank", style="dim", width=4)
-    table.add_column("Commander", style="cyan")
-    table.add_column("Colors", width=8)
-    table.add_column("Budget", style="green")
-    table.add_column("Archetype", style="blue")
-    table.add_column("Owned", style="yellow")
-    table.add_column("Completion", style="green", justify="right")
-    table.add_column("Cost", style="red", justify="right")
+        # Initialize repositories for commander discovery
+        # RecommendationService available for future integration
 
-    # Sample data for demonstration
-    sample_data = [
-        ("1", "Meren of Clan Nel Toth", "BG", "Mid", "Combo", "78/89", "87.6%", "$67"),
-        (
-            "2",
-            "Atraxa, Praetors' Voice",
-            "WUBG",
-            "High",
-            "Control",
-            "84/98",
-            "85.7%",
-            "$245",
-        ),
-        ("3", "The Gitrog Monster", "BG", "Mid", "Combo", "71/84", "84.5%", "$89"),
-    ]
+        # Get commander recommendations using our new system
+        console.print("\n🔍 [bold]Analyzing commanders...[/bold]")
 
-    for row in sample_data:
-        table.add_row(*row)
+        # Parse color filter
+        color_filter = None
+        if kwargs["colors"]:
+            color_filter = list(kwargs["colors"].replace(",", "").upper())
 
-    console.print(table)
-    console.print(
-        "\n💡 [italic]Coming soon: Full implementation with your actual collection data[/italic]"
-    )
+        # Get recommendations using the new buildability system
+        recommendations = commander_repo.get_recommendations_for_collection(
+            user_id=kwargs["user_id"],
+            color_preferences=color_filter,
+            budget_max=kwargs["budget_max"],
+            min_completion=kwargs["min_completion"],
+            limit=kwargs["limit"],
+        )
+
+        if not recommendations:
+            console.print(
+                "[yellow]⚠️  No commanders found matching criteria. Try lowering --min-completion or run 'ponderous update-edhrec' first.[/yellow]"
+            )
+            return
+
+        # Display results
+        console.print(
+            f"\n✨ [bold green]Found {len(recommendations)} buildable commanders![/bold green]"
+        )
+
+        # Create results table
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Rank", style="dim", width=4)
+        table.add_column("Commander", style="cyan", min_width=20)
+        table.add_column("Colors", style="bright_blue", width=6)
+        table.add_column("Buildability", style="green", width=12)
+        table.add_column("Cards Owned", style="yellow", width=11)
+        table.add_column("Missing $", style="red", width=10)
+        table.add_column("Power", style="magenta", width=6)
+
+        for i, rec in enumerate(recommendations, 1):
+            # Format data
+            colors = "".join(rec.color_identity) if rec.color_identity else "C"
+            buildability = f"{rec.completion_percentage:.1%}"
+            cards_owned = f"{rec.owned_cards}/{rec.total_cards}"
+            missing_value = f"${rec.missing_cards_value:.0f}"
+            power = f"{rec.power_level:.1f}"
+
+            table.add_row(
+                str(i),
+                rec.commander_name,
+                colors,
+                buildability,
+                cards_owned,
+                missing_value,
+                power,
+            )
+
+        console.print(table)
+
+        # Show summary
+        console.print("\n📊 [bold]Summary:[/bold]")
+        console.print(
+            f"   • Best match: [cyan]{recommendations[0].commander_name}[/cyan] ({recommendations[0].completion_percentage:.1%} buildable)"
+        )
+        if len(recommendations) > 1:
+            console.print(
+                f"   • Total investment needed: [red]${sum(r.missing_cards_value for r in recommendations[:3]):.0f}[/red] (top 3)"
+            )
+
+        return  # Skip the old filtering logic below
+
+        # OLD CODE - keeping for reference but skipping execution
+        filtered_commanders = []
+        for commander in []:
+            # Apply color filter
+            if color_filter:
+                commander_colors = set(commander.color_identity)
+                filter_colors = set(color_filter)
+                if not filter_colors.issubset(commander_colors):
+                    continue
+
+            # Apply budget filter
+            if kwargs["budget_max"] and commander.avg_deck_price > kwargs["budget_max"]:
+                continue
+            if kwargs["budget_min"] and commander.avg_deck_price < kwargs["budget_min"]:
+                continue
+
+            # Apply power level filter
+            if kwargs["power_min"] and commander.power_level < kwargs["power_min"]:
+                continue
+            if kwargs["power_max"] and commander.power_level > kwargs["power_max"]:
+                continue
+
+            # Apply popularity filter
+            if (
+                kwargs["popularity_min"]
+                and commander.total_decks < kwargs["popularity_min"]
+            ):
+                continue
+
+            # Apply salt score filter
+            if (
+                kwargs["salt_score_max"]
+                and commander.salt_score > kwargs["salt_score_max"]
+            ):
+                continue
+
+            filtered_commanders.append(commander)
+
+        # Limit results
+        filtered_commanders = filtered_commanders[: kwargs["limit"]]
+
+        # Create output table
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Rank", style="dim", width=4)
+        table.add_column("Commander", style="cyan")
+        table.add_column("Colors", width=8)
+        table.add_column("Decks", style="yellow", justify="right")
+        table.add_column("Price", style="green", justify="right")
+        table.add_column("Power", style="blue", justify="center")
+        table.add_column("Salt", style="red", justify="center")
+
+        if not filtered_commanders:
+            console.print(
+                "[yellow]⚠️  No commanders match your criteria. Try adjusting your filters.[/yellow]"
+            )
+            return
+
+        # Populate table with real data
+        for i, commander in enumerate(filtered_commanders, 1):
+            # Format color identity
+            colors = commander.color_identity_str if commander.color_identity else "C"
+
+            # Format deck count
+            deck_count = f"{commander.total_decks:,}"
+
+            # Format price
+            price = f"${commander.avg_deck_price:.0f}"
+
+            # Format power level
+            power = f"{commander.power_level:.1f}"
+
+            # Format salt score
+            salt = f"{commander.salt_score:.1f}"
+
+            table.add_row(
+                str(i),
+                commander.name,
+                colors,
+                deck_count,
+                price,
+                power,
+                salt,
+            )
+
+        console.print(table)
+
+        # Show summary
+        console.print("\n📊 [bold]Results Summary:[/bold]")
+        console.print(
+            f"   • Found: [cyan]{len(filtered_commanders)}[/cyan] commanders matching criteria"
+        )
+        console.print(
+            f"   • Total in database: [yellow]{commander_repo.get_commander_stats()['total_commanders']}[/yellow] commanders"
+        )
+
+        if kwargs["output_format"] == "json":
+            # TODO: Implement JSON output
+            console.print("\n[yellow]JSON output format not yet implemented[/yellow]")
+        elif kwargs["output_format"] == "csv":
+            # TODO: Implement CSV output
+            console.print("\n[yellow]CSV output format not yet implemented[/yellow]")
+
+    except Exception as e:
+        console.print(f"\n[red]❌ Commander discovery failed: {e}[/red]")
+        if ctx.obj.debug:
+            console.print_exception()
+    finally:
+        if db_connection:
+            db_connection.close()
 
 
 @cli.command("discover")
@@ -794,13 +951,25 @@ def analyze_collection(
 )
 @click.option("--popular-only", is_flag=True, help="Update only popular commanders")
 @click.option("--limit", default=100, type=int, help="Maximum commanders to update")
+@click.option(
+    "--paginate", is_flag=True, help="Use Playwright pagination to get more commanders"
+)
+@click.option(
+    "--max-pages", default=5, type=int, help="Maximum pages to load when paginating"
+)
+@click.option(
+    "--visible", is_flag=True, help="Run browser in visible mode (for debugging)"
+)
 @click.pass_context
 @handle_exception
 def update_edhrec(
-    ctx: click.Context,  # noqa: ARG001
+    ctx: click.Context,
     commanders_file: Path | None,
     popular_only: bool,
     limit: int,
+    paginate: bool,
+    max_pages: int,
+    visible: bool,
 ) -> None:
     """
     🔄 Update EDHREC data for commanders and deck statistics.
@@ -816,11 +985,187 @@ def update_edhrec(
     elif popular_only:
         console.print("Source: [cyan]Popular commanders only[/cyan]")
 
-    console.print(f"Limit: [yellow]{limit}[/yellow] commanders")
+    if paginate:
+        console.print(f"Mode: [green]Pagination[/green] (max {max_pages} pages)")
+        if visible:
+            console.print("Browser: [yellow]Visible mode[/yellow] (for debugging)")
+        else:
+            console.print("Browser: [cyan]Headless mode[/cyan]")
+    else:
+        console.print(f"Limit: [yellow]{limit}[/yellow] commanders")
 
-    # TODO: Implement EDHREC data update
-    console.print("[yellow]⚠️  EDHREC data updates not yet implemented[/yellow]")
-    console.print("Coming soon: Comprehensive EDHREC scraping and data processing")
+    # Import required components
+    try:
+        from ponderous.domain.models.commander import Commander
+        from ponderous.infrastructure.database.repositories.commander_repository_impl import (
+            CommanderRepositoryImpl,
+        )
+        from ponderous.infrastructure.edhrec.scraper import EDHRECScraper
+    except ImportError as e:
+        console.print(f"[red]Error importing required modules: {e}[/red]")
+        return
+
+    async def run_update() -> None:
+        """Run the EDHREC update asynchronously."""
+        db_connection = None
+        commander_repo = None
+
+        try:
+            # Get database connection and repository
+            db_connection = get_database_connection()
+            commander_repo = CommanderRepositoryImpl(db_connection)
+
+            console.print("\n🔍 [bold]Scraping commanders from EDHREC...[/bold]")
+
+            # Create progress display
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                console=console,
+            ) as progress:
+                scrape_task = progress.add_task(
+                    "Fetching commander data...", total=limit
+                )
+
+                async with EDHRECScraper() as scraper:
+                    # Handle commanders file
+                    if commanders_file:
+                        console.print(
+                            f"[yellow]Reading commanders from file: {commanders_file}[/yellow]"
+                        )
+                        # TODO: Implement file-based commander list reading
+                        console.print(
+                            "[yellow]⚠️  File-based updates not yet implemented[/yellow]"
+                        )
+                        return
+
+                    # Scrape commanders - use pagination if requested
+                    if paginate:
+                        progress.update(
+                            scrape_task,
+                            description=f"Using pagination (max {max_pages} pages)...",
+                        )
+                        edhrec_commanders = await scraper.get_paginated_commanders(
+                            max_pages=max_pages, headless=not visible
+                        )
+                    else:
+                        edhrec_commanders = await scraper.get_popular_commanders(
+                            limit=limit
+                        )
+
+                    progress.update(
+                        scrape_task,
+                        advance=len(edhrec_commanders),
+                        description="Converting to domain models...",
+                    )
+
+                    # Convert EDHREC commanders to domain commanders
+                    domain_commanders = []
+                    for edhrec_commander in edhrec_commanders:
+                        try:
+                            # Convert color identity string to list
+                            color_list = (
+                                list(edhrec_commander.color_identity)
+                                if edhrec_commander.color_identity != "C"
+                                else []
+                            )
+
+                            # Generate card_id from URL slug (EDHREC standard format)
+                            card_id = f"edhrec_{edhrec_commander.url_slug}"
+
+                            domain_commander = Commander(
+                                name=edhrec_commander.name,
+                                card_id=card_id,
+                                color_identity=color_list,
+                                total_decks=edhrec_commander.total_decks,
+                                popularity_rank=edhrec_commander.popularity_rank,
+                                avg_deck_price=edhrec_commander.avg_deck_price,
+                                salt_score=edhrec_commander.salt_score,
+                                power_level=edhrec_commander.power_level,
+                            )
+                            domain_commanders.append(domain_commander)
+                        except Exception as e:
+                            console.print(
+                                f"[yellow]Warning: Failed to convert commander {edhrec_commander.name}: {e}[/yellow]"
+                            )
+                            continue
+
+                    progress.update(
+                        scrape_task, description="Storing commanders to database..."
+                    )
+
+                    # Store commanders to database
+                    stored_count = 0
+                    for commander in domain_commanders:
+                        try:
+                            commander_repo.store(commander)
+                            stored_count += 1
+                        except Exception as e:
+                            console.print(
+                                f"[yellow]Warning: Failed to store {commander.name}: {e}[/yellow]"
+                            )
+                            continue
+
+                    # Store deck composition data for each commander
+                    progress.update(
+                        scrape_task, description="Scraping deck composition data..."
+                    )
+                    cards_stored_total = 0
+
+                    for commander in domain_commanders:
+                        try:
+                            # Scrape and store deck data for the commander
+                            cards_stored = await scraper.scrape_and_store_deck_data(
+                                commander.name, archetype="default", budget_range="mid"
+                            )
+                            cards_stored_total += cards_stored
+
+                            progress.update(
+                                scrape_task,
+                                description=f"Stored deck data for {commander.name} ({cards_stored} cards)",
+                            )
+
+                        except Exception as e:
+                            console.print(
+                                f"[yellow]Warning: Failed to store deck data for {commander.name}: {e}[/yellow]"
+                            )
+                            continue
+
+                    progress.update(
+                        scrape_task, completed=limit, description="Update complete!"
+                    )
+
+            # Success summary
+            console.print("\n✅ [bold green]EDHREC Update Complete![/bold green]")
+            console.print("📊 [bold]Results:[/bold]")
+            console.print(
+                f"   • Scraped: [cyan]{len(edhrec_commanders)}[/cyan] commanders"
+            )
+            console.print(f"   • Stored: [green]{stored_count}[/green] commanders")
+            console.print(
+                f"   • Card inclusion data: [magenta]{cards_stored_total}[/magenta] cards stored"
+            )
+
+            if stored_count < len(edhrec_commanders):
+                skipped = len(edhrec_commanders) - stored_count
+                console.print(
+                    f"   • Skipped: [yellow]{skipped}[/yellow] commanders (conversion/storage errors)"
+                )
+
+        except Exception as e:
+            console.print(f"\n[red]❌ EDHREC update failed: {e}[/red]")
+            if ctx.obj.debug:
+                console.print_exception()
+        finally:
+            if db_connection:
+                db_connection.close()
+
+    # Run the async function
+    import asyncio
+
+    asyncio.run(run_update())
 
 
 @cli.command("edhrec-stats")

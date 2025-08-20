@@ -220,6 +220,17 @@ class CollectionRepository(BaseRepository):
         logger.info(
             f"Stored {imported_count} entries, skipped {skipped_count} duplicates"
         )
+
+        # Transform raw data to normalized collections table
+        if imported_count > 0:
+            # Get unique user_ids from the entries that were just imported
+            user_ids = {entry.user_id for entry in entries}
+            for user_id in user_ids:
+                transformed_count = self._transform_raw_to_collections(user_id)
+                logger.info(
+                    f"Transformed {transformed_count} entries for user {user_id}"
+                )
+
         return imported_count, skipped_count
 
     def _store_batch(
@@ -283,6 +294,46 @@ class CollectionRepository(BaseRepository):
             raise DatabaseError(f"Failed to store collection batch: {e}") from e
 
         return imported_count, skipped_count
+
+    def _transform_raw_to_collections(self, user_id: str) -> int:
+        """Transform raw collection data to normalized collections table.
+
+        Args:
+            user_id: User ID to transform data for
+
+        Returns:
+            Number of entries transformed
+        """
+        transform_query = """
+            INSERT OR REPLACE INTO user_collections (
+                user_id, source_id, card_id, card_name, quantity, foil_quantity, price_usd, last_updated
+            )
+            SELECT
+                user_id,
+                'moxfield' as source_id,
+                LOWER(REPLACE(REPLACE(card_name, ' ', '_'), ',', '')) as card_id,
+                card_name,
+                quantity,
+                CASE WHEN foil = 'True' OR foil = '1' THEN quantity ELSE 0 END as foil_quantity,
+                NULL as price_usd,
+                CURRENT_TIMESTAMP as last_updated
+            FROM user_collections_raw
+            WHERE user_id = ?
+            AND quantity > 0
+        """
+
+        try:
+            self.execute_query(transform_query, (user_id,))
+
+            # Count how many entries were created/updated
+            count_result = self.fetch_one(
+                "SELECT COUNT(*) FROM user_collections WHERE user_id = ?", (user_id,)
+            )
+            return count_result[0] if count_result else 0
+
+        except Exception as e:
+            logger.error(f"Failed to transform raw data for user {user_id}: {e}")
+            return 0
 
     def _entry_exists(self, entry: CollectionEntry) -> bool:
         """Check if a collection entry already exists.
