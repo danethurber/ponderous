@@ -282,7 +282,7 @@ class CommanderRepositoryImpl(BaseRepository, CommanderRepository):
             # Apply budget filter
             if budget_max:
                 commanders_query += " AND c.avg_deck_price <= ?"
-                params.append(budget_max)
+                params.append(str(budget_max))
 
             commanders_query += " ORDER BY c.popularity_rank"
 

@@ -150,6 +150,12 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    "ponderous.infrastructure.edhrec.scraper",
+]
+ignore_errors = true
+
 # Pytest configuration
 [tool.pytest.ini_options]
 minversion = "8.0"

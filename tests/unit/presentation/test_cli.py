@@ -15,7 +15,8 @@ if TYPE_CHECKING:
 import pytest
 from click.testing import CliRunner
 
-from ponderous.cli import PonderousContext, cli
+from ponderous.presentation.cli.base import PonderousContext
+from ponderous.presentation.cli.main import cli
 from ponderous.shared.config import PonderousConfig
 from ponderous.shared.exceptions import PonderousError
 
