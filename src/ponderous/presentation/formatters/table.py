@@ -44,15 +44,39 @@ class CommanderRecommendationFormatter(TableFormatter):
         table.add_column("Power", style="magenta", width=6)
 
         for i, rec in enumerate(recommendations, 1):
-            colors = "".join(rec.color_identity) if rec.color_identity else "C"
-            buildability = f"{rec.completion_percentage:.1%}"
-            cards_owned = f"{rec.owned_cards}/{rec.total_cards}"
-            missing_value = f"${rec.missing_cards_value:.0f}"
-            power = f"{rec.power_level:.1f}"
+            # Handle both dict and object formats
+            def get_field(obj: Any, field: str) -> Any:
+                return (
+                    getattr(obj, field, None) if hasattr(obj, field) else obj.get(field)
+                )
+
+            color_identity = get_field(rec, "color_identity")
+            colors = "".join(color_identity) if color_identity else "C"
+
+            completion_percentage = get_field(rec, "completion_percentage")
+            buildability = (
+                f"{completion_percentage:.1%}" if completion_percentage else "N/A"
+            )
+
+            owned_cards = get_field(rec, "owned_cards")
+            total_cards = get_field(rec, "total_cards")
+            cards_owned = (
+                f"{owned_cards}/{total_cards}" if owned_cards and total_cards else "N/A"
+            )
+
+            missing_cards_value = get_field(rec, "missing_cards_value")
+            missing_value = (
+                f"${missing_cards_value:.0f}" if missing_cards_value else "N/A"
+            )
+
+            power_level = get_field(rec, "power_level")
+            power = f"{power_level:.1f}" if power_level else "N/A"
+
+            commander_name = get_field(rec, "commander_name") or "Unknown"
 
             table.add_row(
                 str(i),
-                rec.commander_name,
+                commander_name,
                 colors,
                 buildability,
                 cards_owned,
