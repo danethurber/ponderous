@@ -10,7 +10,11 @@ from pathlib import Path
 
 import click
 
-from ponderous.infrastructure.database import CollectionRepository
+from ponderous.application.services import CollectionAnalyzer
+from ponderous.infrastructure.database import (
+    CollectionRepository,
+    CommanderRepositoryImpl,
+)
 from ponderous.infrastructure.importers import ImportRequest, MoxfieldCSVImporter
 from ponderous.shared.exceptions import PonderousError
 
@@ -179,6 +183,10 @@ def import_collection(
 @click.option(
     "--show-gaps", is_flag=True, help="Show collection gaps and recommendations"
 )
+@click.option("--show-value", is_flag=True, help="Show collection value analysis")
+@click.option("--show-synergy", is_flag=True, help="Show synergy overlap analysis")
+@click.option("--show-investment", is_flag=True, help="Show investment recommendations")
+@click.option("--budget", type=float, help="Budget for investment recommendations")
 @click.option("--limit", default=10, type=int, help="Maximum number of entries to show")
 @click.pass_context
 @handle_exception
@@ -187,6 +195,10 @@ def analyze_collection(
     user_id: str,
     show_themes: bool,
     show_gaps: bool,
+    show_value: bool,
+    show_synergy: bool,
+    show_investment: bool,
+    budget: float | None,
     limit: int,
 ) -> None:
     """
@@ -299,20 +311,187 @@ def analyze_collection(
                 )
             console.print(history_table)
 
-        # Placeholder for future features
-        if show_themes:
-            console.print("\n🎭 [bold yellow]Theme Analysis:[/bold yellow] Coming soon")
-            console.print("   • Tribal synergies analysis")
-            console.print("   • Archetype compatibility scoring")
-            console.print("   • Color identity recommendations")
+        # Advanced analytics using CollectionAnalyzer
+        if any([show_themes, show_gaps, show_value, show_synergy, show_investment]):
+            console.print("\n🔬 [bold blue]Advanced Analytics[/bold blue]")
 
-        if show_gaps:
-            console.print(
-                "\n🕳️  [bold yellow]Collection Gaps:[/bold yellow] Coming soon"
-            )
-            console.print("   • Missing staples identification")
-            console.print("   • Budget upgrade suggestions")
-            console.print("   • Commander viability analysis")
+            try:
+                # Initialize analyzer with repositories
+                commander_repo = CommanderRepositoryImpl(db_connection)
+                analyzer = CollectionAnalyzer(repository, commander_repo)
+
+                # Get comprehensive analysis
+                analysis = analyzer.analyze_collection(user_id)
+
+                # Show collection value analysis
+                if show_value:
+                    console.print(
+                        "\n💰 [bold green]Collection Value Analysis:[/bold green]"
+                    )
+                    value_metrics = analyzer.calculate_collection_value(user_id)
+
+                    value_table = commands.summary_formatter.create_table(
+                        header_style="bold green"
+                    )
+                    value_table.add_column("Metric", style="dim")
+                    value_table.add_column("Value", style="green")
+
+                    value_table.add_row(
+                        "Total Cards", str(value_metrics["total_cards"])
+                    )
+                    value_table.add_row(
+                        "Unique Cards", str(value_metrics["unique_cards"])
+                    )
+                    value_table.add_row(
+                        "Estimated Total Value", f"${value_metrics['total_value']:.2f}"
+                    )
+                    value_table.add_row(
+                        "Average Card Value", f"${value_metrics['average_value']:.2f}"
+                    )
+
+                    console.print(value_table)
+
+                    # Show most valuable cards
+                    valuable_cards = analyzer.identify_most_valuable_cards(
+                        user_id, limit=5
+                    )
+                    if valuable_cards:
+                        console.print("\n💎 [bold]Most Valuable Cards:[/bold]")
+                        for card in valuable_cards:
+                            console.print(
+                                f"   • {card['card_name']} (×{card['quantity']}) - ${card['estimated_value']:.2f}"
+                            )
+
+                # Show theme compatibility analysis
+                if show_themes:
+                    console.print("\n🎭 [bold magenta]Theme Analysis:[/bold magenta]")
+
+                    # Color distribution
+                    console.print("\n🌈 [bold]Color Distribution:[/bold]")
+                    for color, count in analysis.color_distribution.items():
+                        percentage = (
+                            (count / analysis.total_cards * 100)
+                            if analysis.total_cards > 0
+                            else 0
+                        )
+                        console.print(
+                            f"   • {color}: {count} cards ({percentage:.1f}%)"
+                        )
+
+                    console.print(
+                        f"\n⭐ [bold]Strongest Colors:[/bold] {', '.join(analysis.strongest_colors[:3])}"
+                    )
+
+                    # Archetype affinities
+                    if analysis.archetype_affinity:
+                        console.print("\n🏗️  [bold]Archetype Affinities:[/bold]")
+                        for archetype, score in sorted(
+                            analysis.archetype_affinity.items(),
+                            key=lambda x: x[1],
+                            reverse=True,
+                        ):
+                            console.print(
+                                f"   • {archetype}: {score:.1%} compatibility"
+                            )
+
+                    # Theme support
+                    if analysis.theme_support:
+                        console.print("\n🎲 [bold]Theme Support:[/bold]")
+                        for theme, score in sorted(
+                            analysis.theme_support.items(),
+                            key=lambda x: x[1],
+                            reverse=True,
+                        ):
+                            if score > 0.05:  # Only show themes with >5% support
+                                console.print(f"   • {theme}: {score:.1%} support")
+
+                # Show synergy overlaps
+                if show_synergy:
+                    console.print("\n🔗 [bold cyan]Synergy Overlaps:[/bold cyan]")
+                    synergy_groups = analyzer.find_synergy_overlaps(user_id)
+
+                    if synergy_groups:
+                        for group in synergy_groups:
+                            console.print(
+                                f"\n   🎯 [bold]{group['theme']}[/bold] (Score: {group['synergy_score']:.2f})"
+                            )
+                            console.print(
+                                f"      Cards: {', '.join(group['cards'][:5])}"
+                            )
+                            if len(group["cards"]) > 5:
+                                console.print(
+                                    f"      ... and {len(group['cards']) - 5} more"
+                                )
+                            console.print(
+                                f"      Commander overlap: {group['commander_overlap']} decks"
+                            )
+                    else:
+                        console.print("   No significant synergy overlaps detected")
+
+                # Show collection gaps
+                if show_gaps:
+                    console.print("\n🕳️  [bold yellow]Collection Gaps:[/bold yellow]")
+                    gaps = analyzer.identify_collection_gaps(user_id)
+
+                    if gaps:
+                        for gap in gaps:
+                            priority_color = (
+                                "red"
+                                if gap["priority"] == "high"
+                                else "yellow"
+                                if gap["priority"] == "medium"
+                                else "dim"
+                            )
+                            console.print(
+                                f"\n   ⚠️  [bold {priority_color}]{gap['gap_type']}[/bold {priority_color}]"
+                            )
+                            console.print(f"      {gap['description']}")
+                            console.print(f"      💡 {gap['suggestion']}")
+                    else:
+                        console.print("   No significant collection gaps identified")
+
+                    # Show missing staples
+                    if analysis.missing_staples:
+                        console.print("\n📋 [bold]Missing Common Staples:[/bold]")
+                        for staple in analysis.missing_staples[:10]:
+                            console.print(f"   • {staple}")
+
+                # Show investment recommendations
+                if show_investment:
+                    investment_budget = budget or 100.0  # Default $100 budget
+                    console.print(
+                        f"\n💸 [bold green]Investment Recommendations[/bold green] (${investment_budget:.0f} budget)"
+                    )
+
+                    recommendations = analyzer.recommend_card_purchases(
+                        user_id, investment_budget
+                    )
+
+                    if recommendations:
+                        total_cost = 0.0
+                        for rec in recommendations:
+                            console.print(
+                                f"\n   💳 [bold]{rec['card_name']}[/bold] - ${rec['estimated_price']:.2f}"
+                            )
+                            console.print(
+                                f"      Impact: {rec['impact_score']}/10 - {rec['reason']}"
+                            )
+                            total_cost += rec["estimated_price"]
+
+                        console.print(
+                            f"\n   📊 [bold]Total Cost:[/bold] ${total_cost:.2f} of ${investment_budget:.2f} budget"
+                        )
+                        console.print(
+                            f"   💰 [bold]Remaining:[/bold] ${investment_budget - total_cost:.2f}"
+                        )
+                    else:
+                        console.print(
+                            "   No recommendations within budget or collection already optimized"
+                        )
+
+            except Exception as e:
+                console.print(f"\n[red]Error performing advanced analytics: {e}[/red]")
+                console.print("[dim]Falling back to basic analysis mode[/dim]")
 
     except Exception as e:
         console.print(f"[red]Error analyzing collection: {e}[/red]")

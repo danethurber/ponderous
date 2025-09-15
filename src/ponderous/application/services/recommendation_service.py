@@ -1,7 +1,7 @@
 """Commander recommendation service."""
 
 import logging
-from typing import Any
+from typing import Any, Protocol
 
 from ponderous.domain.models.commander import CommanderRecommendation
 from ponderous.domain.repositories.card_repository import CardRepository
@@ -9,6 +9,16 @@ from ponderous.domain.repositories.commander_repository import CommanderReposito
 from ponderous.infrastructure.database.repositories.collection_repository import (
     CollectionRepository,
 )
+
+
+class EDHRECCard(Protocol):
+    """Protocol for EDHREC card data."""
+
+    name: str
+    inclusion_rate: float  # 0.0 to 1.0
+    category: str  # "signature", "high_synergy", "staple", "basic"
+    synergy_score: float  # 0.0 to 1.0
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +42,64 @@ class RecommendationService:
         self.card_repo = card_repo
         self.commander_repo = commander_repo
         self.collection_repo = collection_repo
+
+    def calculate_buildability_score(
+        self, owned_cards: set[str], deck_cards: list[EDHRECCard]
+    ) -> float:
+        """Calculate weighted buildability score based on owned cards and EDHREC data.
+
+        Uses sophisticated algorithm that weights cards by category and synergy:
+        - Signature cards (commanders, key pieces): 3.0x weight
+        - High synergy cards: 2.0x weight + synergy bonus
+        - Staple cards: 1.5x weight
+        - Basic lands: 0.5x weight
+
+        Args:
+            owned_cards: Set of card names owned by user
+            deck_cards: List of EDHREC cards with inclusion rates and categories
+
+        Returns:
+            Buildability score from 0.0 to 10.0
+        """
+        if not deck_cards:
+            return 0.0
+
+        # Category weights for scoring impact
+        category_weights = {
+            "signature": 3.0,
+            "high_synergy": 2.0,
+            "staple": 1.5,
+            "basic": 0.5,
+        }
+
+        total_weighted_value = 0.0
+        owned_weighted_value = 0.0
+
+        for card in deck_cards:
+            # Get base weight for card category
+            base_weight = category_weights.get(card.category, 1.0)
+
+            # Add synergy bonus for high synergy cards
+            synergy_bonus = 0.0
+            if card.category == "high_synergy":
+                synergy_bonus = card.synergy_score * 0.5  # Up to 0.5 bonus
+
+            # Calculate final weight with inclusion rate influence
+            card_weight = (
+                base_weight * (0.5 + 0.5 * card.inclusion_rate) + synergy_bonus
+            )
+
+            total_weighted_value += card_weight
+
+            if card.name in owned_cards:
+                owned_weighted_value += card_weight
+
+        # Calculate percentage and scale to 0-10
+        if total_weighted_value == 0:
+            return 0.0
+
+        completion_ratio = owned_weighted_value / total_weighted_value
+        return min(completion_ratio * 10.0, 10.0)
 
     def get_commander_recommendations(
         self,
@@ -65,37 +133,96 @@ class RecommendationService:
             # Get available commanders from card database
             commanders_from_cards = self.card_repo.get_commanders(color_preferences)
 
-            # Create simple recommendations based on owned commanders
+            # Get user's collection cards for analysis
+            user_collection = self.collection_repo.get_collection_by_user(
+                user_id, limit=2000
+            )
+            owned_card_names = {entry.get("card_name", "") for entry in user_collection}
+
+            # Create EDHREC-based recommendations for owned commanders
             recommendations = []
             for card in commanders_from_cards:
-                # Simple buildability calculation
-                # For now, just base it on the fact that the user owns the commander
-                completion_percentage = 0.15  # Base 15% for owning commander
-                buildability_score = completion_percentage * 10
+                try:
+                    # Get EDHREC data for this commander
+                    commander_entity = self.commander_repo.get_by_name(card.name)
+                    if not commander_entity:
+                        # Skip commanders without EDHREC data
+                        continue
 
-                # Estimate deck cost (placeholder)
-                estimated_deck_price = 250.0
-                if color_preferences and len(color_preferences) <= 2:
-                    estimated_deck_price = 180.0  # Simpler mana base
+                    # Convert commander entity to data dict for analysis
+                    commander_data = {
+                        "total_decks": commander_entity.total_decks,
+                        "popularity_rank": commander_entity.popularity_rank,
+                        "avg_deck_price": commander_entity.avg_deck_price,
+                        "power_level": commander_entity.power_level,
+                        "salt_score": commander_entity.salt_score,
+                        "archetype_distribution": getattr(
+                            commander_entity,
+                            "archetype_distribution",
+                            {"midrange": 1.0},
+                        ),
+                    }
 
-                recommendation = CommanderRecommendation(
-                    commander_name=card.name,
-                    color_identity=card.color_identity or [],
-                    archetype="General Value",  # Placeholder
-                    budget_range="mid",
-                    avg_deck_price=estimated_deck_price,
-                    completion_percentage=completion_percentage,
-                    buildability_score=buildability_score,
-                    owned_cards=1,  # At least the commander
-                    total_cards=99,  # Standard deck size
-                    missing_cards_value=estimated_deck_price,
-                    popularity_rank=500,  # Default rank
-                    popularity_count=100,  # Default popularity
-                    power_level=6.0,  # Default power level
-                    salt_score=2.0,  # Default salt score
-                    themes=["Value", "Midrange"],
-                )
-                recommendations.append(recommendation)
+                    # Get deck composition from EDHREC for buildability analysis
+                    deck_cards = self._get_mock_edhrec_deck_cards(
+                        card.name, commander_data
+                    )
+
+                    # Calculate real buildability using our new algorithm
+                    buildability_score = self.calculate_buildability_score(
+                        owned_card_names, deck_cards
+                    )
+                    completion_percentage = (
+                        buildability_score / 10.0
+                    )  # Convert back to percentage
+
+                    # Skip low-completion commanders based on threshold
+                    if completion_percentage < min_completion:
+                        continue
+
+                    # Calculate owned vs total cards
+                    owned_cards = sum(
+                        1 for dc in deck_cards if dc.name in owned_card_names
+                    )
+                    total_cards = len(deck_cards)
+
+                    # Estimate missing cards value based on EDHREC data
+                    missing_cards_value = self._estimate_missing_cards_cost(
+                        owned_card_names,
+                        deck_cards,
+                        commander_data.get("avg_deck_price", 300.0),
+                    )
+
+                    # Determine archetype based on EDHREC data
+                    archetype = self._determine_primary_archetype(commander_data)
+
+                    # Determine budget range based on deck price
+                    budget_range = self._determine_budget_range(
+                        commander_data.get("avg_deck_price", 300.0)
+                    )
+
+                    recommendation = CommanderRecommendation(
+                        commander_name=card.name,
+                        color_identity=card.color_identity or [],
+                        archetype=archetype,
+                        budget_range=budget_range,
+                        avg_deck_price=commander_data.get("avg_deck_price", 300.0),
+                        completion_percentage=completion_percentage,
+                        buildability_score=buildability_score,
+                        owned_cards=owned_cards,
+                        total_cards=total_cards,
+                        missing_cards_value=missing_cards_value,
+                        popularity_rank=commander_data.get("popularity_rank", 500),
+                        popularity_count=commander_data.get("total_decks", 100),
+                        power_level=commander_data.get("power_level", 7.0),
+                        salt_score=commander_data.get("salt_score", 2.0),
+                        themes=self._extract_themes(commander_data),
+                    )
+                    recommendations.append(recommendation)
+
+                except Exception as e:
+                    logger.warning(f"Failed to analyze commander {card.name}: {e}")
+                    continue
 
             # Sort by buildability score
             recommendations.sort(key=lambda r: r.buildability_score, reverse=True)
@@ -124,47 +251,92 @@ class RecommendationService:
                 user_id, limit=1000
             )
 
-            # Count cards by type/category
+            # Count cards by theme/strategy for more sophisticated analysis
             total_cards = len(collection_entries)
-            artifact_count = sum(
-                1
-                for entry in collection_entries
-                if "artifact" in entry.get("card_name", "").lower()
-            )
-            instant_sorcery_count = sum(
+
+            # Define theme-based card detection
+            graveyard_cards = sum(
                 1
                 for entry in collection_entries
                 if any(
                     word in entry.get("card_name", "").lower()
-                    for word in ["lightning", "bolt", "spell", "instant"]
+                    for word in [
+                        "entomb",
+                        "reanimate",
+                        "buried",
+                        "necromancy",
+                        "animate",
+                        "exhume",
+                    ]
                 )
             )
 
-            # Simple synergy calculation
-            synergy_score = 0.0
-            if "artifact" in commander_name.lower():
-                synergy_score = artifact_count / total_cards if total_cards > 0 else 0.0
-            elif any(
-                word in commander_name.lower()
-                for word in ["spell", "instant", "wizard"]
-            ):
-                synergy_score = (
-                    instant_sorcery_count / total_cards if total_cards > 0 else 0.0
+            artifact_cards = sum(
+                1
+                for entry in collection_entries
+                if "artifact" in entry.get("card_name", "").lower()
+            )
+
+            token_cards = sum(
+                1
+                for entry in collection_entries
+                if any(
+                    word in entry.get("card_name", "").lower()
+                    for word in [
+                        "token",
+                        "populate",
+                        "doubling",
+                        "parallel",
+                        "anointed",
+                    ]
                 )
-            else:
-                synergy_score = 0.1  # Base synergy
+            )
+
+            combo_cards = sum(
+                1
+                for entry in collection_entries
+                if any(
+                    word in entry.get("card_name", "").lower()
+                    for word in ["tutor", "storm", "ritual", "combo", "infinite"]
+                )
+            )
+
+            # Sophisticated synergy calculation based on commander themes
+            synergy_score = 0.1  # Base synergy
+            theme_cards = 0
+
+            if "meren" in commander_name.lower():
+                # Graveyard synergy for Meren
+                theme_cards = graveyard_cards
+                synergy_score = (
+                    (graveyard_cards / total_cards) if total_cards > 0 else 0.0
+                )
+            elif "artifact" in commander_name.lower():
+                theme_cards = artifact_cards
+                synergy_score = (
+                    (artifact_cards / total_cards) if total_cards > 0 else 0.0
+                )
+            elif any(word in commander_name.lower() for word in ["token", "populate"]):
+                theme_cards = token_cards
+                synergy_score = (token_cards / total_cards) if total_cards > 0 else 0.0
+            elif any(word in commander_name.lower() for word in ["combo", "storm"]):
+                theme_cards = combo_cards
+                synergy_score = (combo_cards / total_cards) if total_cards > 0 else 0.0
 
             return {
                 "commander_name": commander_name,
                 "total_collection_cards": total_cards,
                 "synergy_score": min(synergy_score, 1.0),
-                "artifact_cards": artifact_count,
-                "spell_cards": instant_sorcery_count,
+                "graveyard_cards": graveyard_cards,
+                "artifact_cards": artifact_cards,
+                "token_cards": token_cards,
+                "combo_cards": combo_cards,
+                "theme_cards": theme_cards,
                 "synergy_category": (
                     "High"
-                    if synergy_score > 0.3
+                    if synergy_score > 0.5
                     else "Medium"
-                    if synergy_score > 0.1
+                    if synergy_score > 0.2
                     else "Low"
                 ),
             }
@@ -198,3 +370,184 @@ class RecommendationService:
             r for r in recommendations if r.buildability_score >= min_buildability
         ]
         return buildable[:limit]
+
+    def _get_mock_edhrec_deck_cards(
+        self, commander_name: str, _commander_data: dict[str, Any]
+    ) -> list[EDHRECCard]:
+        """Get mock EDHREC deck cards for analysis.
+
+        TODO: Replace with real EDHREC deck composition data from scraper.
+        For now, generates representative deck based on commander data.
+
+        Args:
+            commander_name: Name of the commander
+            commander_data: EDHREC data for the commander
+
+        Returns:
+            List of mock EDHREC cards representing typical deck composition
+        """
+        # Generate representative deck based on commander characteristics
+        deck_cards = []
+
+        # Add essential staples (every deck has these)
+        staples = [
+            MockEDHRECCard("Sol Ring", 0.85, "staple", 0.0),
+            MockEDHRECCard("Command Tower", 0.70, "staple", 0.0),
+            MockEDHRECCard("Arcane Signet", 0.75, "staple", 0.0),
+            MockEDHRECCard("Swords to Plowshares", 0.60, "staple", 0.0),  # If white
+            MockEDHRECCard("Counterspell", 0.55, "staple", 0.0),  # If blue
+            MockEDHRECCard("Lightning Bolt", 0.50, "staple", 0.0),  # If red
+            MockEDHRECCard("Beast Within", 0.45, "staple", 0.0),  # If green
+            MockEDHRECCard("Vampiric Tutor", 0.40, "staple", 0.0),  # If black
+        ]
+        deck_cards.extend(staples)
+
+        # Add signature cards based on commander
+        if "artifact" in commander_name.lower():
+            signature_cards = [
+                MockEDHRECCard("Foundry Inspector", 0.65, "signature", 0.8),
+                MockEDHRECCard("Etherium Sculptor", 0.60, "signature", 0.7),
+                MockEDHRECCard("Chief Engineer", 0.55, "signature", 0.6),
+            ]
+        elif "token" in commander_name.lower() or "populate" in commander_name.lower():
+            signature_cards = [
+                MockEDHRECCard("Anointed Procession", 0.70, "signature", 0.9),
+                MockEDHRECCard("Parallel Lives", 0.65, "signature", 0.8),
+                MockEDHRECCard("Doubling Season", 0.60, "signature", 0.9),
+            ]
+        else:
+            # Generic high-value cards
+            signature_cards = [
+                MockEDHRECCard("Rhystic Study", 0.75, "signature", 0.7),
+                MockEDHRECCard("Demonic Tutor", 0.60, "signature", 0.8),
+                MockEDHRECCard("Smothering Tithe", 0.65, "signature", 0.6),
+            ]
+        deck_cards.extend(signature_cards)
+
+        # Add high synergy cards (theme-specific)
+        synergy_cards = [
+            MockEDHRECCard("Skullclamp", 0.55, "high_synergy", 0.5),
+            MockEDHRECCard("Sensei's Divining Top", 0.45, "high_synergy", 0.4),
+            MockEDHRECCard("Scroll Rack", 0.40, "high_synergy", 0.3),
+        ]
+        deck_cards.extend(synergy_cards)
+
+        # Add basic lands and fixing
+        lands = [
+            MockEDHRECCard("Island", 0.90, "basic", 0.0),
+            MockEDHRECCard("Plains", 0.85, "basic", 0.0),
+            MockEDHRECCard("Swamp", 0.80, "basic", 0.0),
+            MockEDHRECCard("Mountain", 0.75, "basic", 0.0),
+            MockEDHRECCard("Forest", 0.70, "basic", 0.0),
+        ]
+        deck_cards.extend(lands[:5])  # Add 5 basics
+
+        return deck_cards
+
+    def _estimate_missing_cards_cost(
+        self, owned_cards: set[str], deck_cards: list[EDHRECCard], avg_deck_price: float
+    ) -> float:
+        """Estimate cost of missing cards based on deck composition and avg price.
+
+        Args:
+            owned_cards: Cards owned by user
+            deck_cards: EDHREC deck composition
+            avg_deck_price: Average deck price from EDHREC
+
+        Returns:
+            Estimated cost of missing cards
+        """
+        total_cards = len(deck_cards)
+
+        if total_cards == 0:
+            return 0.0
+
+        # Estimate based on proportion of missing cards and their importance
+        missing_weight = 0.0
+        total_weight = 0.0
+
+        for card in deck_cards:
+            weight = {
+                "signature": 3.0,
+                "high_synergy": 2.0,
+                "staple": 1.5,
+                "basic": 0.1,  # Basics are cheap
+            }.get(card.category, 1.0)
+
+            total_weight += weight
+            if card.name not in owned_cards:
+                missing_weight += weight
+
+        if total_weight == 0:
+            return 0.0
+
+        missing_ratio = missing_weight / total_weight
+        return avg_deck_price * missing_ratio
+
+    def _determine_primary_archetype(self, commander_data: dict[str, Any]) -> str:
+        """Determine primary archetype from EDHREC data.
+
+        Args:
+            commander_data: EDHREC commander data
+
+        Returns:
+            Primary archetype name
+        """
+        archetype_dist = commander_data.get("archetype_distribution", {})
+        if not archetype_dist:
+            return "Midrange"  # Default
+
+        # Return the most popular archetype
+        return max(archetype_dist.keys(), key=lambda k: archetype_dist[k])
+
+    def _determine_budget_range(self, avg_price: float) -> str:
+        """Determine budget range based on average deck price.
+
+        Args:
+            avg_price: Average deck price
+
+        Returns:
+            Budget range category
+        """
+        if avg_price < 150:
+            return "budget"
+        elif avg_price < 500:
+            return "mid"
+        elif avg_price < 1000:
+            return "high"
+        else:
+            return "cedh"
+
+    def _extract_themes(self, commander_data: dict[str, Any]) -> list[str]:
+        """Extract themes from EDHREC commander data.
+
+        Args:
+            commander_data: EDHREC commander data
+
+        Returns:
+            List of theme names
+        """
+        # TODO: Extract real themes from EDHREC data
+        # For now, return some common themes based on archetype
+        archetype = self._determine_primary_archetype(commander_data)
+
+        theme_map = {
+            "combo": ["Combo", "Synergy"],
+            "control": ["Control", "Value"],
+            "aggro": ["Aggro", "Combat"],
+            "midrange": ["Value", "Midrange"],
+        }
+
+        return theme_map.get(archetype.lower(), ["Value", "Synergy"])
+
+
+class MockEDHRECCard:
+    """Mock EDHREC card for testing and development."""
+
+    def __init__(
+        self, name: str, inclusion_rate: float, category: str, synergy_score: float
+    ):
+        self.name = name
+        self.inclusion_rate = inclusion_rate
+        self.category = category
+        self.synergy_score = synergy_score

@@ -1,0 +1,1 @@
+"""EDHREC infrastructure tests."""
